@@ -19,22 +19,22 @@ const FETCH_TIMEOUT = 20000;
 const PROJECTION_USES_FILTERS = true;
 
 /* ============================================================
-   ACCESO (LOGIN) - Contraseñas directas en texto plano
+   ACCESO (LOGIN) - Configurado con hashes SHA-256
 ============================================================ */
 
 const USERS_CONFIG = {
     "elva": {
-        pass: "elva2026",
+        passHash: "cb6d67549bf668603fba8d71bf88e90f8f5846cea86d4ee7a875e3f7196900d3",
         name: "Elva Edith Curo Salazar",
         csvUrl: "https://docs.google.com/spreadsheets/d/e/2PACX-1vS2dS4SShe8mxhPXlWqkzaYjhLzztRdNPaSy8shwiCx8U_bO_EGp3W8dbSYJfrc5qUmXGYHX9x87Y7I/pub?output=csv"
     },
     "gianella": {
-        pass: "gianella2026",
+        passHash: "6263ec332c6c68d42ececb0a24402383f218053f267503d282491195c4c8c586",
         name: "Gianella Mendiguete Navarro",
         csvUrl: "https://docs.google.com/spreadsheets/d/e/2PACX-1vTpDEkiE8mYRUvwsYlzzcPpd54EQCYF-7yIVOd-D14hmGvUosSbzocGvd7jIsVxb9Seffj3aSZ_2UKQ/pub?output=csv"
     },
     "raul": {
-        pass: "raul2026",
+        passHash: "248d6dbd5b8807d9f78201a09d73d6bb64c20ee3cf217596a70e7e1e4a6a5712",
         name: "Raúl Hugo Eulogio Terranova",
         csvUrl: "https://docs.google.com/spreadsheets/d/e/2PACX-1vQ-0sM4BhtW0jFQUkPZr4fkExixvpNEGe1GPisZTtFsJC-pBtpOePh0uigNq7iFAw/pub?output=csv"
     }
@@ -1103,8 +1103,19 @@ function mostrarToast(message) {
 
 
 /* ============================================================
-   AUTENTICACIÓN Y LOGIN (Texto plano directo)
+   AUTENTICACIÓN Y LOGIN (Con soporte para HASH SHA-256)
 ============================================================ */
+
+async function sha256Hex(text) {
+    const msgBuffer = new TextEncoder().encode(text);
+    const hashBuffer = await crypto.subtle.digest("SHA-256", msgBuffer);
+    const hashArray = Array.from(new Uint8Array(hashBuffer));
+    return hashArray.map(b => b.toString(16).padStart(2, "0")).join("");
+}
+
+async function hashClave(usuario, clave) {
+    return await sha256Hex(`${String(usuario).trim().toLowerCase()}:${clave}`);
+}
 
 function findUser(id) {
     return Object.prototype.hasOwnProperty.call(USERS_CONFIG, id)
@@ -1112,12 +1123,15 @@ function findUser(id) {
         : null;
 }
 
-function validarCredenciales(usuario, clave) {
+async function validarCredenciales(usuario, clave) {
     const user = findUser(String(usuario).trim().toLowerCase());
-    if (!user || user.pass !== clave) {
-        return null;
+    if (!user) return null;
+
+    const inputHash = await hashClave(usuario, clave);
+    if (user.passHash === inputHash) {
+        return user;
     }
-    return user;
+    return null;
 }
 
 function configurarLogin() {
@@ -1137,13 +1151,13 @@ function configurarLogin() {
         }
     }
 
-    loginForm?.addEventListener("submit", event => {
+    loginForm?.addEventListener("submit", async event => {
         event.preventDefault();
         const userInput = $("loginUser").value;
         const passInput = $("loginPass").value;
         const errorBox = $("loginError");
 
-        const user = validarCredenciales(userInput, passInput);
+        const user = await validarCredenciales(userInput, passInput);
 
         if (user) {
             sessionStorage.setItem(SESSION_KEY, user.id);
