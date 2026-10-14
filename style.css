@@ -23,7 +23,7 @@
     --orange-soft: #fffbeb;
     --red: #dc2626;
     --red-soft: #fef2f2;
-    --purple: #7c3aed;
+    --purple: #5c2ab4;
     --purple-soft: #f5f3ff;
     --gray: #64748b;
 
@@ -1999,3 +1999,105 @@ button:disabled {
         display: none;
     }
 }
+
+
+/* ==========================================
+   COLORES PERSONALIZADOS POR USUARIO
+   ========================================== */
+
+/* GIANELLA: rosado malva sobrio */
+.app-shell.theme-gianella {
+    --primary: #B85C7A;
+    --primary-dark: #94415E;
+    --primary-soft: #FBEAF0;
+}
+
+.app-shell.theme-gianella .brand-logo {
+    background: linear-gradient(135deg, #B85C7A, #94415E);
+}
+
+.app-shell.theme-gianella .hero-card {
+    background: linear-gradient(
+        135deg, #35212B 0%, #71384F 55%, #B85C7A 100%
+    );
+}
+
+.app-shell.theme-gianella .hero-card h2 span {
+    color: #F6BDD0;
+}
+
+.app-shell.theme-gianella .user-chip {
+    background: #FBEAF0;
+    color: #94415E;
+}
+
+
+/* ELVA: verde salvia / teal */
+.app-shell.theme-elva {
+    --primary: #0F766E;
+    --primary-dark: #115E59;
+    --primary-soft: #E7F5F2;
+}
+
+.app-shell.theme-elva .brand-logo {
+    background: linear-gradient(135deg, #0F766E, #0D9488);
+}
+
+.app-shell.theme-elva .hero-card {
+    background: linear-gradient(
+        135deg, #102E2B 0%, #155E59 55%, #0F766E 100%
+    );
+}
+
+.app-shell.theme-elva .hero-card h2 span {
+    color: #99F6E4;
+}
+
+.app-shell.theme-elva .user-chip {
+    background: #E7F5F2;
+    color: #115E59;
+}
+
+
+/* RAÚL: azul profesional original */
+.app-shell.theme-raul {
+    --primary: #2563EB;
+    --primary-dark: #1D4ED8;
+    --primary-soft: #EFF6FF;
+}
+
+.app-shell.theme-raul .brand-logo {
+    background: linear-gradient(135deg, #2563EB, #4F46E5);
+}
+
+.app-shell.theme-raul .hero-card {
+    background: linear-gradient(
+        135deg, #0F172A 0%, #172554 55%, #1D4ED8 100%
+    );
+}
+
+.app-shell.theme-raul .hero-card h2 span {
+    color: #93C5FD;
+}
+
+.app-shell.theme-raul .user-chip {
+    background: #EFF6FF;
+    color: #1D4ED8;
+}
+
+
+/* Botones principales según el color de la persona */
+.app-shell .btn-primary {
+    background: var(--primary);
+}
+
+.app-shell .btn-primary:hover:not(:disabled) {
+    background: var(--primary-dark);
+}
+
+.app-shell .action-button {
+    border-color: var(--primary-soft);
+    background: var(--primary-soft);
+    color: var(--primary-dark);
+}
+

@@ -5,11 +5,7 @@
 
 "use strict";
 
-/* ============================================================
-   CONFIGURACIÓN
-============================================================ */
 
-/* El enlace del Excel depende de la asesora que inicia sesión (ver USERS_CONFIG). */
 let CSV_URL = "";
 
 const ROWS_PER_PAGE = 10;
@@ -17,36 +13,26 @@ const REFRESH_INTERVAL = 60000;
 const SEARCH_DEBOUNCE = 200;
 const FETCH_TIMEOUT = 20000;
 
-/*
-   true  = la proyección de comisión se calcula con las ventas filtradas
-           (buscador y filtros por columna).
-   false = siempre se calcula con TODAS las ventas cargadas.
-*/
+
 const PROJECTION_USES_FILTERS = true;
 
-/* ============================================================
-   ACCESO (LOGIN)
 
-   Cada asesora entra con su usuario y contraseña y ve SU Excel.
-   Las contraseñas NO están escritas: se guarda su huella SHA-256
-   ("passHash"), calculada con  usuario:contraseña.
-
-   Para agregar o cambiar una asesora:
-   1) Abre la página, pulsa F12 y en la pestaña "Consola" escribe:
-        hashClave("usuario", "contraseña")
-   2) Copia el resultado en "passHash" y pega su enlace en "csvUrl".
-============================================================ */
 
 const USERS_CONFIG = {
     "elva": {
-        passHash: "cb6d67549bf668603fba8d71bf88e90f8f5846cea86d4ee7a875e3f7196900d3",
+        pass: "elva2026",
         name: "Elva Edith Curo Salazar",
         csvUrl: "https://docs.google.com/spreadsheets/d/e/2PACX-1vS2dS4SShe8mxhPXlWqkzaYjhLzztRdNPaSy8shwiCx8U_bO_EGp3W8dbSYJfrc5qUmXGYHX9x87Y7I/pub?output=csv"
     },
     "gianella": {
-        passHash: "6263ec332c6c68d42ececb0a24402383f218053f267503d282491195c4c8c586",
+        pass: "gianella2026",
         name: "Gianella Mendiguete Navarro",
         csvUrl: "https://docs.google.com/spreadsheets/d/e/2PACX-1vTpDEkiE8mYRUvwsYlzzcPpd54EQCYF-7yIVOd-D14hmGvUosSbzocGvd7jIsVxb9Seffj3aSZ_2UKQ/pub?output=csv"
+    },
+    "raul": {
+        pass: "leobotis",
+        name: "Raúl Hugo Eulogio Terranova",
+        csvUrl: "https://docs.google.com/spreadsheets/d/e/2PACX-1vQ-0sM4BhtW0jFQUkPZr4fkExixvpNEGe1GPisZTtFsJC-pBtpOePh0uigNq7iFAw/pub?output=csv"
     }
 };
 
@@ -2105,7 +2091,7 @@ function findUser(id) {
 function validarCredenciales(usuario, clave) {
     const user = findUser(String(usuario).trim().toLowerCase());
 
-    if (!user || hashClave(user.id, clave) !== user.passHash) {
+    if (!user || String(clave) !== user.pass) {
         return null;
     }
 
@@ -2122,6 +2108,14 @@ function mostrarLogin() {
 function entrar(user) {
     currentUser = user;
     CSV_URL = user.csvUrl;
+    const appShell = $("appShell");
+    appShell.classList.remove(
+        "theme-gianella",
+        "theme-elva",
+        "theme-raul"
+    );
+    appShell.classList.add(`theme-${user.id}`);
+
 
     try {
         sessionStorage.setItem(SESSION_KEY, user.id);
@@ -2237,3 +2231,4 @@ window.mostrarDetalle = mostrarDetalle;
 window.cerrarDetalle = cerrarDetalle;
 window.cargarDatos = cargarDatos;
 window.hashClave = hashClave;
+
