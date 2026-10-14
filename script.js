@@ -9,8 +9,8 @@
    CONFIGURACIÓN
 ============================================================ */
 
-const CSV_URL =
-    "https://docs.google.com/spreadsheets/d/e/2PACX-1vTpDEkiE8mYRUvwsYlzzcPpd54EQCYF-7yIVOd-D14hmGvUosSbzocGvd7jIsVxb9Seffj3aSZ_2UKQ/pub?output=csv";
+/* El enlace del Excel depende de la asesora que inicia sesión (ver USERS_CONFIG). */
+let CSV_URL = "";
 
 const ROWS_PER_PAGE = 10;
 const REFRESH_INTERVAL = 60000;
@@ -23,6 +23,38 @@ const FETCH_TIMEOUT = 20000;
    false = siempre se calcula con TODAS las ventas cargadas.
 */
 const PROJECTION_USES_FILTERS = true;
+
+/* ============================================================
+   ACCESO (LOGIN)
+
+   Cada asesora entra con su usuario y contraseña y ve SU Excel.
+   Las contraseñas NO están escritas: se guarda su huella SHA-256
+   ("passHash"), calculada con  usuario:contraseña.
+
+   Para agregar o cambiar una asesora:
+   1) Abre la página, pulsa F12 y en la pestaña "Consola" escribe:
+        hashClave("usuario", "contraseña")
+   2) Copia el resultado en "passHash" y pega su enlace en "csvUrl".
+============================================================ */
+
+const USERS_CONFIG = {
+    "elva": {
+        passHash: "cb6d67549bf668603fba8d71bf88e90f8f5846cea86d4ee7a875e3f7196900d3",
+        name: "Elva Edith Curo Salazar",
+        csvUrl: "https://docs.google.com/spreadsheets/d/e/2PACX-1vS2dS4SShe8mxhPXlWqkzaYjhLzztRdNPaSy8shwiCx8U_bO_EGp3W8dbSYJfrc5qUmXGYHX9x87Y7I/pub?output=csv"
+    },
+    "gianella": {
+        passHash: "6263ec332c6c68d42ececb0a24402383f218053f267503d282491195c4c8c586",
+        name: "Gianella Mendiguete Navarro",
+        csvUrl: "https://docs.google.com/spreadsheets/d/e/2PACX-1vTpDEkiE8mYRUvwsYlzzcPpd54EQCYF-7yIVOd-D14hmGvUosSbzocGvd7jIsVxb9Seffj3aSZ_2UKQ/pub?output=csv"
+    }
+};
+
+const SESSION_KEY = "seguimiento_ventas_sesion";
+const MAX_LOGIN_ATTEMPTS = 5;
+const LOGIN_LOCK_MS = 30000;
+
+let currentUser = null;
 
 
 /* ============================================================
@@ -1988,12 +2020,212 @@ function iniciarActualizacionAutomatica() {
    INICIO
 ============================================================ */
 
-document.addEventListener("DOMContentLoaded", () => {
+/* ----- SHA-256 (se usa para no guardar las contraseñas en texto) ----- */
+function sha256Hex(text) {
+    const K = new Uint32Array([
+        0x428a2f98, 0x71374491, 0xb5c0fbcf, 0xe9b5dba5, 0x3956c25b, 0x59f111f1, 0x923f82a4, 0xab1c5ed5,
+        0xd807aa98, 0x12835b01, 0x243185be, 0x550c7dc3, 0x72be5d74, 0x80deb1fe, 0x9bdc06a7, 0xc19bf174,
+        0xe49b69c1, 0xefbe4786, 0x0fc19dc6, 0x240ca1cc, 0x2de92c6f, 0x4a7484aa, 0x5cb0a9dc, 0x76f988da,
+        0x983e5152, 0xa831c66d, 0xb00327c8, 0xbf597fc7, 0xc6e00bf3, 0xd5a79147, 0x06ca6351, 0x14292967,
+        0x27b70a85, 0x2e1b2138, 0x4d2c6dfc, 0x53380d13, 0x650a7354, 0x766a0abb, 0x81c2c92e, 0x92722c85,
+        0xa2bfe8a1, 0xa81a664b, 0xc24b8b70, 0xc76c51a3, 0xd192e819, 0xd6990624, 0xf40e3585, 0x106aa070,
+        0x19a4c116, 0x1e376c08, 0x2748774c, 0x34b0bcb5, 0x391c0cb3, 0x4ed8aa4a, 0x5b9cca4f, 0x682e6ff3,
+        0x748f82ee, 0x78a5636f, 0x84c87814, 0x8cc70208, 0x90befffa, 0xa4506ceb, 0xbef9a3f7, 0xc67178f2
+    ]);
+
+    const H = new Uint32Array([
+        0x6a09e667, 0xbb67ae85, 0x3c6ef372, 0xa54ff53a, 0x510e527f, 0x9b05688c, 0x1f83d9ab, 0x5be0cd19
+    ]);
+
+    const bytes = new TextEncoder().encode(text);
+    const length = bytes.length;
+    const paddedLength = (((length + 8) >> 6) + 1) << 6;
+    const data = new Uint8Array(paddedLength);
+    const view = new DataView(data.buffer);
+    const w = new Uint32Array(64);
+    const rotr = (x, n) => (x >>> n) | (x << (32 - n));
+
+    data.set(bytes);
+    data[length] = 0x80;
+    view.setUint32(paddedLength - 8, Math.floor((length * 8) / 4294967296));
+    view.setUint32(paddedLength - 4, (length * 8) >>> 0);
+
+    for (let offset = 0; offset < paddedLength; offset += 64) {
+        for (let i = 0; i < 16; i++) {
+            w[i] = view.getUint32(offset + i * 4);
+        }
+
+        for (let i = 16; i < 64; i++) {
+            const s0 = rotr(w[i - 15], 7) ^ rotr(w[i - 15], 18) ^ (w[i - 15] >>> 3);
+            const s1 = rotr(w[i - 2], 17) ^ rotr(w[i - 2], 19) ^ (w[i - 2] >>> 10);
+
+            w[i] = (w[i - 16] + s0 + w[i - 7] + s1) >>> 0;
+        }
+
+        let [a, b, c, d, e, f, g, h] = H;
+
+        for (let i = 0; i < 64; i++) {
+            const S1 = rotr(e, 6) ^ rotr(e, 11) ^ rotr(e, 25);
+            const ch = (e & f) ^ (~e & g);
+            const t1 = (h + S1 + ch + K[i] + w[i]) >>> 0;
+            const S0 = rotr(a, 2) ^ rotr(a, 13) ^ rotr(a, 22);
+            const maj = (a & b) ^ (a & c) ^ (b & c);
+            const t2 = (S0 + maj) >>> 0;
+
+            h = g;
+            g = f;
+            f = e;
+            e = (d + t1) >>> 0;
+            d = c;
+            c = b;
+            b = a;
+            a = (t1 + t2) >>> 0;
+        }
+
+        H[0] += a; H[1] += b; H[2] += c; H[3] += d;
+        H[4] += e; H[5] += f; H[6] += g; H[7] += h;
+    }
+
+    return Array.from(H, value => value.toString(16).padStart(8, "0")).join("");
+}
+
+/* Huella de una contraseña (usuario en minúsculas + ":" + contraseña) */
+function hashClave(usuario, clave) {
+    return sha256Hex(`${String(usuario).trim().toLowerCase()}:${clave}`);
+}
+
+
+/* ----- Sesión ----- */
+function findUser(id) {
+    return Object.prototype.hasOwnProperty.call(USERS_CONFIG, id)
+        ? { id, ...USERS_CONFIG[id] }
+        : null;
+}
+
+function validarCredenciales(usuario, clave) {
+    const user = findUser(String(usuario).trim().toLowerCase());
+
+    if (!user || hashClave(user.id, clave) !== user.passHash) {
+        return null;
+    }
+
+    return user;
+}
+
+function mostrarLogin() {
+    $("appShell").hidden = true;
+    $("loginScreen").hidden = false;
+    document.title = "Iniciar sesión | Seguimiento de ventas";
+    $("loginUser").focus();
+}
+
+function entrar(user) {
+    currentUser = user;
+    CSV_URL = user.csvUrl;
+
+    try {
+        sessionStorage.setItem(SESSION_KEY, user.id);
+    } catch (error) { /* sin almacenamiento: pedirá la clave al recargar */ }
+
+    setText("userName", user.name);
+    document.title = `Seguimiento de ventas | ${user.name}`;
+
+    $("loginScreen").hidden = true;
+    $("appShell").hidden = false;
+
+    iniciarApp();
+}
+
+/* Cerrar sesión recarga la página: así no queda ningún dato de la sesión anterior */
+function cerrarSesion() {
+    try {
+        sessionStorage.removeItem(SESSION_KEY);
+    } catch (error) { /* ignorar */ }
+
+    location.reload();
+}
+
+function configurarLogin() {
+    const form = $("loginForm");
+    const error = $("loginError");
+    let failedAttempts = 0;
+    let lockedUntil = 0;
+
+    const showError = message => {
+        error.textContent = message;
+        error.hidden = false;
+    };
+
+    form.addEventListener("submit", event => {
+        event.preventDefault();
+
+        const waitMs = lockedUntil - Date.now();
+
+        if (waitMs > 0) {
+            showError(`Demasiados intentos. Espera ${Math.ceil(waitMs / 1000)} segundos.`);
+            return;
+        }
+
+        const user = validarCredenciales($("loginUser").value, $("loginPass").value);
+
+        if (!user) {
+            failedAttempts++;
+
+            if (failedAttempts >= MAX_LOGIN_ATTEMPTS) {
+                failedAttempts = 0;
+                lockedUntil = Date.now() + LOGIN_LOCK_MS;
+                showError("Demasiados intentos. Espera 30 segundos e inténtalo de nuevo.");
+            } else {
+                showError("Usuario o contraseña incorrectos.");
+            }
+
+            $("loginPass").select();
+            return;
+        }
+
+        error.hidden = true;
+        $("loginPass").value = "";
+        entrar(user);
+    });
+
+    $("togglePass").addEventListener("click", () => {
+        const input = $("loginPass");
+        const show = input.type === "password";
+
+        input.type = show ? "text" : "password";
+        $("togglePass").textContent = show ? "Ocultar" : "Mostrar";
+        $("togglePass").setAttribute("aria-label", show ? "Ocultar contraseña" : "Mostrar contraseña");
+    });
+
+    $("logoutButton").addEventListener("click", cerrarSesion);
+}
+
+
+/* ----- Arranque ----- */
+function iniciarApp() {
     construirFiltros();
     appliedValues = leerControles();
     configurarEventos();
     cargarDatos();
     iniciarActualizacionAutomatica();
+}
+
+document.addEventListener("DOMContentLoaded", () => {
+    configurarLogin();
+
+    let saved = null;
+
+    try {
+        saved = sessionStorage.getItem(SESSION_KEY);
+    } catch (error) { /* ignorar */ }
+
+    const user = saved ? findUser(saved) : null;
+
+    if (user) {
+        entrar(user);
+    } else {
+        mostrarLogin();
+    }
 });
 
 
@@ -2004,3 +2236,4 @@ document.addEventListener("DOMContentLoaded", () => {
 window.mostrarDetalle = mostrarDetalle;
 window.cerrarDetalle = cerrarDetalle;
 window.cargarDatos = cargarDatos;
+window.hashClave = hashClave;
