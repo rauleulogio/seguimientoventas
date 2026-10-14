@@ -39,12 +39,12 @@ const PROJECTION_USES_FILTERS = true;
 
 const USERS_CONFIG = {
     "elva": {
-        passHash: "cb6d67549bf668603fba8d71bf88e90f8f5846cea86d4ee7a875e3f7196900d3",
+        passHash: "elva2025",
         name: "Elva Edith Curo Salazar",
         csvUrl: "https://docs.google.com/spreadsheets/d/e/2PACX-1vS2dS4SShe8mxhPXlWqkzaYjhLzztRdNPaSy8shwiCx8U_bO_EGp3W8dbSYJfrc5qUmXGYHX9x87Y7I/pub?output=csv"
     },
     "gianella": {
-        passHash: "6263ec332c6c68d42ececb0a24402383f218053f267503d282491195c4c8c586",
+        passHash: "gianella2026",
         name: "Gianella Mendiguete Navarro",
         csvUrl: "https://docs.google.com/spreadsheets/d/e/2PACX-1vTpDEkiE8mYRUvwsYlzzcPpd54EQCYF-7yIVOd-D14hmGvUosSbzocGvd7jIsVxb9Seffj3aSZ_2UKQ/pub?output=csv"
     }
