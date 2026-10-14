@@ -39,19 +39,14 @@ const PROJECTION_USES_FILTERS = true;
 
 const USERS_CONFIG = {
     "elva": {
-        passHash: "elva2025",
+        pass: "elva2025",
         name: "Elva Edith Curo Salazar",
         csvUrl: "https://docs.google.com/spreadsheets/d/e/2PACX-1vS2dS4SShe8mxhPXlWqkzaYjhLzztRdNPaSy8shwiCx8U_bO_EGp3W8dbSYJfrc5qUmXGYHX9x87Y7I/pub?output=csv"
     },
     "gianella": {
-        passHash: "gianella2026",
+        pass: "gianella2026",
         name: "Gianella Mendiguete Navarro",
         csvUrl: "https://docs.google.com/spreadsheets/d/e/2PACX-1vTpDEkiE8mYRUvwsYlzzcPpd54EQCYF-7yIVOd-D14hmGvUosSbzocGvd7jIsVxb9Seffj3aSZ_2UKQ/pub?output=csv"
-    },
-       "raul": {
-        passHash: "raul2025",
-        name: "Raúl Hugo Eulogio Terranova",
-        csvUrl: "https://docs.google.com/spreadsheets/d/e/2PACX-1vQ-0sM4BhtW0jFQUkPZr4fkExixvpNEGe1GPisZTtFsJC-pBtpOePh0uigNq7iFAw/pub?output=csv"
     }
 };
 
