@@ -2110,7 +2110,7 @@ function findUser(id) {
 function validarCredenciales(usuario, clave) {
     const user = findUser(String(usuario).trim().toLowerCase());
 
-    if (!user || hashClave(user.id, clave) !== user.passHash) {
+    if (!user || user.pass !== clave) {
         return null;
     }
 
