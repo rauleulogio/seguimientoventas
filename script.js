@@ -9,7 +9,6 @@
    CONFIGURACIÓN
 ============================================================ */
 
-/* El enlace del Excel depende de la asesora que inicia sesión (ver USERS_CONFIG). */
 let CSV_URL = "";
 
 const ROWS_PER_PAGE = 10;
@@ -17,29 +16,15 @@ const REFRESH_INTERVAL = 60000;
 const SEARCH_DEBOUNCE = 200;
 const FETCH_TIMEOUT = 20000;
 
-/*
-   true  = la proyección de comisión se calcula con las ventas filtradas
-           (buscador y filtros por columna).
-   false = siempre se calcula con TODAS las ventas cargadas.
-*/
 const PROJECTION_USES_FILTERS = true;
 
 /* ============================================================
-   ACCESO (LOGIN)
-
-   Cada asesora entra con su usuario y contraseña y ve SU Excel.
-   Las contraseñas NO están escritas: se guarda su huella SHA-256
-   ("passHash"), calculada con  usuario:contraseña.
-
-   Para agregar o cambiar una asesora:
-   1) Abre la página, pulsa F12 y en la pestaña "Consola" escribe:
-        hashClave("usuario", "contraseña")
-   2) Copia el resultado en "passHash" y pega su enlace en "csvUrl".
+   ACCESO (LOGIN) - Configurado con contraseñas en texto plano
 ============================================================ */
 
 const USERS_CONFIG = {
     "elva": {
-        pass: "elva2025",
+        pass: "elva2026",
         name: "Elva Edith Curo Salazar",
         csvUrl: "https://docs.google.com/spreadsheets/d/e/2PACX-1vS2dS4SShe8mxhPXlWqkzaYjhLzztRdNPaSy8shwiCx8U_bO_EGp3W8dbSYJfrc5qUmXGYHX9x87Y7I/pub?output=csv"
     },
@@ -48,11 +33,12 @@ const USERS_CONFIG = {
         name: "Gianella Mendiguete Navarro",
         csvUrl: "https://docs.google.com/spreadsheets/d/e/2PACX-1vTpDEkiE8mYRUvwsYlzzcPpd54EQCYF-7yIVOd-D14hmGvUosSbzocGvd7jIsVxb9Seffj3aSZ_2UKQ/pub?output=csv"
     },
-      "raul": {
-        pass: "raul2025",
+       "raul": {
+        pass: "raul2026",
         name: "Raúl Hugo Eulogio Terranova",
         csvUrl: "https://docs.google.com/spreadsheets/d/e/2PACX-1vQ-0sM4BhtW0jFQUkPZr4fkExixvpNEGe1GPisZTtFsJC-pBtpOePh0uigNq7iFAw/pub?output=csv"
     }
+   
 };
 
 const SESSION_KEY = "seguimiento_ventas_sesion";
@@ -116,7 +102,6 @@ const COLUMN_ALIASES = {
     status: ["STATUS"]
 };
 
-/* Columnas sin las cuales el panel no funciona bien */
 const REQUIRED_COLUMNS = ["n", "nombre", "dni", "estado"];
 
 const MAIN_COLUMNS = [
@@ -136,10 +121,8 @@ const MAIN_COLUMNS = [
 ];
 
 const DATE_KEYS = ["fechaVenta", "fechaActivacion"];
-/* Solo la columna ESTADO lleva color; las demás van como texto normal */
 const STATUS_KEYS = ["estado"];
 
-/* [etiqueta, clave, ocurrencia] */
 const DETAIL_SECTIONS = [
     {
         title: "Cliente y venta",
@@ -220,13 +203,6 @@ const COMMISSION_RANGES = [
 const TOP_RANGE = COMMISSION_RANGES[COMMISSION_RANGES.length - 1];
 const TARGET_SALES = TOP_RANGE.from;
 
-/*
-   AJUSTES DE LA COMISIÓN (castigos y bonificadores)
-   - El % se aplica sobre la comisión base (POS MONO + ALTA + PREPAGO + MULTI).
-   - Se evalúan de arriba hacia abajo; gana la primera regla que cumple.
-*/
-
-/* Tableu: alcance = órdenes OT activas / total de órdenes OT */
 const TABLEU_RULES = [
     { min: 80,        pct: 15,  label: "≥ 80%" },
     { min: 75,        pct: 5,   label: "≥ 75%" },
@@ -234,14 +210,12 @@ const TABLEU_RULES = [
     { min: -Infinity, pct: -15, label: "< 70%" }
 ];
 
-/* Multipedido: alcance = ventas multipedido activas / ventas activas */
 const MULTI_RULES = [
     { min: 35,        pct: 0,   label: "≥ 35%" },
     { min: 30,        pct: -5,  label: "< 35%" },
     { min: -Infinity, pct: -10, label: "< 30%" }
 ];
 
-/* Redondea a 2 decimales para que 30% sea 30% y no 29.999999% */
 function round2(value) {
     return Math.round(value * 100) / 100;
 }
@@ -288,7 +262,6 @@ function escapeHTML(value) {
 
 function setText(id, value) {
     const element = $(id);
-
     if (element) {
         element.textContent = value;
     }
@@ -300,7 +273,6 @@ function clamp(value, min = 0, max = 100) {
 
 function setWidth(id, percentageValue) {
     const element = $(id);
-
     if (element) {
         element.style.width = `${clamp(percentageValue)}%`;
     }
@@ -311,14 +283,8 @@ function percentage(value, total) {
 }
 
 function formatPercentage(value) {
-    if (!Number.isFinite(value)) {
-        return "0%";
-    }
-
-    return `${value
-        .toFixed(2)
-        .replace(/\.00$/, "")
-        .replace(/(\.\d)0$/, "$1")}%`;
+    if (!Number.isFinite(value)) return "0%";
+    return `${value.toFixed(2).replace(/\.00$/, "").replace(/(\.\d)0$/, "$1")}%`;
 }
 
 const moneyFormatter = new Intl.NumberFormat("es-PE", {
@@ -334,17 +300,13 @@ function formatMoney(value) {
 function formatSignedMoney(value) {
     if (value > 0) return `+${formatMoney(value)}`;
     if (value < 0) return `−${formatMoney(Math.abs(value))}`;
-
     return formatMoney(0);
 }
 
 function formatDateValue(value) {
     const text = cleanValue(value);
     const match = text.match(/^(\d{4})-(\d{2})-(\d{2})/);
-
-    return match
-        ? `${match[3]}/${match[2]}/${match[1]}`
-        : text;
+    return match ? `${match[3]}/${match[2]}/${match[1]}` : text;
 }
 
 
@@ -354,10 +316,7 @@ function formatDateValue(value) {
 
 function detectDelimiter(text) {
     const firstLine = text.split(/\r?\n/, 1)[0] || "";
-
-    let comma = 0;
-    let semicolon = 0;
-    let insideQuotes = false;
+    let comma = 0, semicolon = 0, insideQuotes = false;
 
     for (const char of firstLine) {
         if (char === '"') {
@@ -367,24 +326,18 @@ function detectDelimiter(text) {
             if (char === ";") semicolon++;
         }
     }
-
     return semicolon > comma ? ";" : ",";
 }
 
 function parseCSV(text, delimiter) {
     const rows = [];
-
-    let row = [];
-    let value = "";
-    let insideQuotes = false;
+    let row = [], value = "", insideQuotes = false;
 
     const pushRow = () => {
         row.push(value);
-
         if (row.some(cell => cleanValue(cell) !== "")) {
             rows.push(row);
         }
-
         row = [];
         value = "";
     };
@@ -404,108 +357,66 @@ function parseCSV(text, delimiter) {
             row.push(value);
             value = "";
         } else if ((char === "\n" || char === "\r") && !insideQuotes) {
-            if (char === "\r" && next === "\n") {
-                i++;
-            }
-
+            if (char === "\r" && next === "\n") i++;
             pushRow();
         } else {
             value += char;
         }
     }
-
-    if (value !== "" || row.length > 0) {
-        pushRow();
-    }
-
+    if (value !== "" || row.length > 0) pushRow();
     return rows;
 }
 
 
 /* ============================================================
-   ACCESO A COLUMNAS (con caché)
+   ACCESO A COLUMNAS
 ============================================================ */
 
 function computeColumnIndex(aliases, occurrence) {
     const wanted = aliases.map(normalizeHeader);
     const normalizedHeaders = headers.map(normalizeHeader);
-
-    const exact = [];
-    const partial = [];
+    const exact = [], partial = [];
 
     normalizedHeaders.forEach((header, index) => {
-        if (!header) {
-            return;
-        }
-
-        if (wanted.includes(header)) {
-            exact.push(index);
-        }
-
-        /* Coincidencia parcial solo para textos largos: evita falsos positivos */
+        if (!header) return;
+        if (wanted.includes(header)) exact.push(index);
         const isPartial = wanted.some(alias =>
-            alias.length >= 4 &&
-            header.length >= 4 &&
+            alias.length >= 4 && header.length >= 4 &&
             (header.includes(alias) || alias.includes(header))
         );
-
-        if (isPartial) {
-            partial.push(index);
-        }
+        if (isPartial) partial.push(index);
     });
 
-    /* "last": la última columna con ese nombre (ej. el ORDEN OT del final) */
     if (occurrence === "last") {
         const list = exact.length ? exact : partial;
-
         return list.length ? list[list.length - 1] : -1;
     }
 
-    if (exact.length >= occurrence) {
-        return exact[occurrence - 1];
-    }
-
-    if (partial.length >= occurrence) {
-        return partial[occurrence - 1];
-    }
-
+    if (exact.length >= occurrence) return exact[occurrence - 1];
+    if (partial.length >= occurrence) return partial[occurrence - 1];
     return -1;
 }
 
 function findColumnIndex(aliases, occurrence = 1) {
-    if (!headers.length) {
-        return -1;
-    }
-
+    if (!headers.length) return -1;
     const cacheKey = `${aliases.join("|")}#${occurrence}`;
-
     if (!columnCache.has(cacheKey)) {
         columnCache.set(cacheKey, computeColumnIndex(aliases, occurrence));
     }
-
     return columnCache.get(cacheKey);
 }
 
 function resolveAliases(keyOrAliases) {
-    if (Array.isArray(keyOrAliases)) {
-        return keyOrAliases;
-    }
-
-    return COLUMN_ALIASES[keyOrAliases] || [keyOrAliases];
+    return Array.isArray(keyOrAliases) ? keyOrAliases : (COLUMN_ALIASES[keyOrAliases] || [keyOrAliases]);
 }
 
 function getValue(row, keyOrAliases, occurrence = 1) {
     const index = findColumnIndex(resolveAliases(keyOrAliases), occurrence);
-
-    return index < 0 || index >= row.length
-        ? ""
-        : cleanValue(row[index]);
+    return index < 0 || index >= row.length ? "" : cleanValue(row[index]);
 }
 
 function missingColumns() {
-    return REQUIRED_COLUMNS.filter(
-        key => findColumnIndex(resolveAliases(key)) < 0
-    );
+    return REQUIRED_COLUMNS.filter(key => findColumnIndex(resolveAliases(key)) < 0);
 }
 
 
@@ -515,156 +426,71 @@ function missingColumns() {
 
 function isRealSale(row) {
     const hasNumber = getValue(row, "n").replace(/\D/g, "") !== "";
-
-    if (!hasNumber) {
-        return false;
-    }
-
+    if (!hasNumber) return false;
     const hasName = normalize(getValue(row, "nombre")).length > 0;
     const hasDni = getValue(row, "dni").replace(/\D/g, "").length >= 6;
-
     return hasName || hasDni;
 }
 
-/* Clasifica un texto de estado. Devuelve null si no reconoce nada. */
 function classifyStatusText(text) {
-    if (/OBSERV/.test(text)) {
-        return "observed";
-    }
-
-    /* \b evita que "INACTIVO" o "INVALIDO" cuenten como activas */
-    if (
-        /\b(ACTIV|VALID)/.test(text) &&
-        !/\bNO (ACTIV|VALID)/.test(text)
-    ) {
-        return "active";
-    }
-
-    if (/PROGRES|PENDIENT|EN PROCESO|EN CURSO/.test(text)) {
-        return "progress";
-    }
-
+    if (/OBSERV/.test(text)) return "observed";
+    if (/\b(ACTIV|VALID)/.test(text) && !/\bNO (ACTIV|VALID)/.test(text)) return "active";
+    if (/PROGRES|PENDIENT|EN PROCESO|EN CURSO/.test(text)) return "progress";
     return null;
 }
 
-/*
-   Devuelve: "cancelled" | "noRecoge" | "active" | "progress" | "observed"
-
-   - Cancelada / No recoge: se detecta en cualquiera de las columnas
-     de estado (como antes).
-   - Activa / En progreso: manda la columna ESTADO. Así una venta con
-     ESTADO "EN PROGRESO" no pasa a activa solo porque ESTADO BO
-     diga "VALIDA".
-*/
 function getOperationalStatus(row) {
     const estado = normalize(getValue(row, "estado"));
-
-    /* OBSERVADA: manda la columna ESTADO */
-    if (/OBSERV/.test(estado)) {
-        return "observed";
-    }
+    if (/OBSERV/.test(estado)) return "observed";
 
     const combined = [
         estado,
-        ...["estadoBO", "subestado", "atencionFinal", "status"]
-            .map(key => normalize(getValue(row, key)))
+        ...["estadoBO", "subestado", "atencionFinal", "status"].map(key => normalize(getValue(row, key)))
     ].join(" | ");
 
-    if (/\b(CANCEL|RECHAZ)/.test(combined)) {
-        return "cancelled";
-    }
+    if (/\b(CANCEL|RECHAZ)/.test(combined)) return "cancelled";
+    if (/NO ?RECOGE/.test(combined)) return "noRecoge";
 
-    if (/NO ?RECOGE/.test(combined)) {
-        return "noRecoge";
-    }
-
-    return (
-        classifyStatusText(estado) ||
-        classifyStatusText(combined) ||
-        "progress"
-    );
+    return classifyStatusText(estado) || classifyStatusText(combined) || "progress";
 }
 
-/*
-   Cantidad de órdenes OT de una venta, leída de la ÚLTIMA columna "ORDEN OT".
-   - Número chico (1, 2, 3...): es la cantidad de órdenes.
-   - Uno o varios números largos (ids de orden): cuenta cada id.
-   - Vacío: 0 órdenes.
-*/
 function getOtCount(row) {
     const raw = getValue(row, "ordenOT", "last");
-
-    if (!raw) {
-        return 0;
-    }
-
+    if (!raw) return 0;
     const small = raw.match(/^\s*(\d{1,3})(?!\d)/);
-
-    if (small) {
-        return parseInt(small[1], 10);
-    }
-
+    if (small) return parseInt(small[1], 10);
     const ids = raw.match(/\d{6,}/g);
-
     return ids ? ids.length : 0;
 }
 
 function getChannel(row) {
-    const combined = normalize(
-        `${getValue(row, "tipoDespacho")} ${getValue(row, "modalidad")}`
-    );
-
-    if (combined.includes("TIENDA") || combined.includes("STORE")) {
-        return "tienda";
-    }
-
-    if (combined.includes("DELIVERY") || combined.includes("DOMICILIO")) {
-        return "delivery";
-    }
-
+    const combined = normalize(`${getValue(row, "tipoDespacho")} ${getValue(row, "modalidad")}`);
+    if (combined.includes("TIENDA") || combined.includes("STORE")) return "tienda";
+    if (combined.includes("DELIVERY") || combined.includes("DOMICILIO")) return "delivery";
     return "other";
 }
 
 function getProductText(row) {
-    return normalize(
-        [
-            getValue(row, "tipoVenta"),
-            getValue(row, "tipoProducto"),
-            getValue(row, "tipoOfrec"),
-            getValue(row, "modalidad"),
-            getValue(row, "lineaPortar")
-        ].join(" ")
-    );
+    return normalize([
+        getValue(row, "tipoVenta"),
+        getValue(row, "tipoProducto"),
+        getValue(row, "tipoOfrec"),
+        getValue(row, "modalidad"),
+        getValue(row, "lineaPortar")
+    ].join(" "));
 }
 
-/*
-   Multipedido = la columna TIPO OFREC. dice MULTILINEA (X2, X3, X4, X5...).
-   Una venta regular solo dice "REGULAR" y nunca cuenta como multipedido.
-*/
 function isMultipedido(row) {
     return /MULTI\s*LINEA/.test(normalize(getValue(row, "tipoOfrec")));
 }
 
 function getCommissionType(productText, isMulti) {
-    if (isMulti) {
-        return "multi";
-    }
-
-    if (productText.includes("PREPAGO")) {
-        return "prepago";
-    }
-
-    if (/\bALTA\b|LLAA/.test(productText)) {
-        return "alta";
-    }
-
+    if (isMulti) return "multi";
+    if (productText.includes("PREPAGO")) return "prepago";
+    if (/\bALTA\b|LLAA/.test(productText)) return "alta";
     return "pos";
 }
 
-/*
-   Cada venta se clasifica UNA sola vez al cargar los datos.
-   Antes se recalculaba en cada render (miles de veces).
-*/
 function buildSale(row) {
     const productText = getProductText(row);
     const isMulti = isMultipedido(row);
@@ -672,21 +498,12 @@ function buildSale(row) {
     const searchText = [
         "n", "fechaVenta", "horaVenta", "dni", "nombre", "distrito",
         "tipoOfrec", "lineaPortar", "estado", "vendedor", "supervisor"
-    ]
-        .map(key => getValue(row, key))
-        .concat(getValue(row, "ordenOT", 1))
-        .map(normalize)
-        .join(" ");
+    ].map(key => getValue(row, key)).concat(getValue(row, "ordenOT", 1)).map(normalize).join(" ");
 
-    /* Valores de las columnas que se pueden filtrar */
     const fields = {};
-
     FILTERS.forEach(filter => {
         const raw = getValue(row, filter.key, filter.occurrence || 1);
-
-        fields[filter.key] = filter.type === "date"
-            ? toISODate(raw)
-            : raw;
+        fields[filter.key] = filter.type === "date" ? toISODate(raw) : raw;
     });
 
     return {
@@ -701,17 +518,8 @@ function buildSale(row) {
     };
 }
 
-/* Resumen de estados. "cancelled" del panel = canceladas + no recoge. */
 function summarize(list) {
-    const result = {
-        total: list.length,
-        active: 0,
-        progress: 0,
-        observed: 0,
-        cancelledOnly: 0,
-        noRecoge: 0
-    };
-
+    const result = { total: list.length, active: 0, progress: 0, observed: 0, cancelledOnly: 0, noRecoge: 0 };
     for (const sale of list) {
         if (sale.status === "active") result.active++;
         else if (sale.status === "progress") result.progress++;
@@ -719,9 +527,7 @@ function summarize(list) {
         else if (sale.status === "cancelled") result.cancelledOnly++;
         else if (sale.status === "noRecoge") result.noRecoge++;
     }
-
     result.cancelled = result.cancelledOnly + result.noRecoge;
-
     return result;
 }
 
@@ -733,22 +539,15 @@ function summarize(list) {
 function buildCsvUrl() {
     const url = new URL(CSV_URL);
     url.searchParams.set("t", Date.now());
-
     return url.toString();
 }
 
 async function cargarDatos(showToastMessage = false) {
-    if (isLoading) {
-        return;
-    }
-
+    if (isLoading) return;
     isLoading = true;
 
     const refreshButton = $("refreshButton");
-
-    if (refreshButton) {
-        refreshButton.disabled = true;
-    }
+    if (refreshButton) refreshButton.disabled = true;
 
     setConnection("loading", "Actualizando...");
 
@@ -761,109 +560,45 @@ async function cargarDatos(showToastMessage = false) {
             signal: controller.signal
         });
 
-        if (!response.ok) {
-            throw new Error(`HTTP ${response.status}`);
-        }
+        if (!response.ok) throw new Error(`HTTP ${response.status}`);
 
         const text = (await response.text()).replace(/^\uFEFF/, "");
-
-        if (text.trim().length < 10) {
-            throw new Error("Google Sheets no devolvió datos.");
-        }
+        if (text.trim().length < 10) throw new Error("Google Sheets no devolvió datos.");
 
         const parsed = parseCSV(text, detectDelimiter(text));
-
-        if (parsed.length < 2) {
-            throw new Error("No se encontraron filas.");
-        }
+        if (parsed.length < 2) throw new Error("No se encontraron filas.");
 
         headers = parsed[0].map(cleanValue);
         columnCache.clear();
 
-        const missing = missingColumns();
-
-        if (missing.length) {
-            console.warn("Columnas no encontradas en la hoja:", missing);
-        }
-
-        const otColumns = headers
-            .map(normalizeHeader)
-            .filter(header => header === "ORDEN OT").length;
-
-        if (otColumns < 2) {
-            console.warn(
-                "Solo hay una columna ORDEN OT: Tableu contará 1 orden por venta con número de orden."
-            );
-        }
-
-        sales = parsed
-            .slice(1)
-            .filter(isRealSale)
-            .map(buildSale);
-
-        const totalOt = sales.reduce((sum, sale) => sum + sale.otCount, 0);
+        sales = parsed.slice(1).filter(isRealSale).map(buildSale);
 
         cargarFiltros();
         aplicarFiltros();
 
         setConnection("connected", "Conectado");
+        setText("lastUpdate", `Actualizado ${new Date().toLocaleString("es-PE", { dateStyle: "short", timeStyle: "short" })}`);
 
-        setText(
-            "lastUpdate",
-            `Actualizado ${new Date().toLocaleString("es-PE", {
-                dateStyle: "short",
-                timeStyle: "short"
-            })}`
-        );
-
-        if (missing.length) {
-            mostrarToast(
-                `Faltan columnas en la hoja: ${missing.join(", ")}.`
-            );
-        } else if (sales.length && totalOt === 0) {
-            mostrarToast(
-                "No se leyeron órdenes en la columna ORDEN OT. Revisa la hoja."
-            );
-        } else if (showToastMessage) {
-            mostrarToast(`Datos actualizados: ${sales.length} ventas.`);
-        }
+        if (showToastMessage) mostrarToast(`Datos actualizados: ${sales.length} ventas.`);
 
     } catch (error) {
         console.error("Error cargando Google Sheets:", error);
-
-        const reason = error.name === "AbortError"
-            ? "La conexión tardó demasiado."
-            : "Revisa tu conexión e inténtalo de nuevo.";
-
         setConnection("error", "Error de conexión");
-
         if (!sales.length) {
-            setTableMessage("No se pudieron cargar las ventas", reason);
             $("tableEmpty").hidden = false;
         }
-
-        mostrarToast(`No se pudieron actualizar los datos. ${reason}`);
-
+        mostrarToast("No se pudieron actualizar los datos.");
     } finally {
         clearTimeout(timeout);
         isLoading = false;
-
-        if (refreshButton) {
-            refreshButton.disabled = false;
-        }
+        if (refreshButton) refreshButton.disabled = false;
     }
 }
 
 function setConnection(type, text) {
     setText("connectionStatus", text);
-
     const dot = $("connectionDot");
-
-    if (dot) {
-        dot.className = type === "connected" || type === "error" || type === "loading"
-            ? type
-            : "";
-    }
+    if (dot) dot.className = type;
 }
 
 
@@ -871,7 +606,6 @@ function setConnection(type, text) {
    FILTROS
 ============================================================ */
 
-/* type: "select" (lista de valores), "text" (contiene) o "date" (desde/hasta) */
 const FILTERS = [
     { key: "fechaVenta", label: "Fecha de venta", type: "date" },
     { key: "dni", label: "DNI", type: "text" },
@@ -887,28 +621,18 @@ const FILTERS = [
 ];
 
 const EMPTY_OPTION = "__EMPTY__";
-
 const filterId = (filter, suffix = "") => `filter-${filter.key}${suffix}`;
 
-/* Convierte 2026-10-05 o 05/10/2026 a "2026-10-05" (comparable) */
 function toISODate(value) {
     const text = cleanValue(value);
     const pad = number => String(number).padStart(2, "0");
-
     let match = text.match(/^(\d{4})-(\d{1,2})-(\d{1,2})/);
-
-    if (match) {
-        return `${match[1]}-${pad(match[2])}-${pad(match[3])}`;
-    }
-
+    if (match) return `${match[1]}-${pad(match[2])}-${pad(match[3])}`;
     match = text.match(/^(\d{1,2})[/-](\d{1,2})[/-](\d{2,4})/);
-
     if (match) {
         const year = match[3].length === 2 ? `20${match[3]}` : match[3];
-
         return `${year}-${pad(match[2])}-${pad(match[1])}`;
     }
-
     return "";
 }
 
@@ -938,206 +662,98 @@ function createFilterField(filter) {
             <select id="${id}"><option value="ALL">Todos</option></select>
         `;
     }
-
     return field;
 }
 
 function construirFiltros() {
     const container = $("advancedFilters");
-
-    if (container) {
-        container.replaceChildren(...FILTERS.map(createFilterField));
-    }
+    if (container) container.replaceChildren(...FILTERS.map(createFilterField));
 }
 
-/* Llena cada lista con los valores reales de la hoja y conserva la selección */
 function cargarFiltros() {
     FILTERS.filter(filter => filter.type === "select").forEach(filter => {
         const select = $(filterId(filter));
-
-        if (!select) {
-            return;
-        }
+        if (!select) return;
 
         const current = select.value;
         const values = new Set();
-
         let hasEmpty = false;
 
         sales.forEach(sale => {
             const value = sale.fields[filter.key];
-
-            if (value) {
-                values.add(value);
-            } else {
-                hasEmpty = true;
-            }
+            if (value) values.add(value);
+            else hasEmpty = true;
         });
 
         select.replaceChildren(new Option("Todos", "ALL"));
-
-        [...values]
-            .sort((a, b) => a.localeCompare(b, "es", { numeric: true }))
-            .forEach(value => select.add(new Option(value, value)));
-
-        if (hasEmpty) {
-            select.add(new Option("(Sin dato)", EMPTY_OPTION));
-        }
-
-        /* Conserva la selección aunque el valor ya no exista en los datos */
-        [current, appliedValues[select.id]].forEach(value => {
-            if (
-                value &&
-                value !== "ALL" &&
-                ![...select.options].some(option => option.value === value)
-            ) {
-                select.add(new Option(value, value));
-            }
-        });
+        [...values].sort((a, b) => a.localeCompare(b, "es", { numeric: true })).forEach(value => select.add(new Option(value, value)));
+        if (hasEmpty) select.add(new Option("(Sin dato)", EMPTY_OPTION));
 
         select.value = current || "ALL";
     });
 }
 
-/* Valores aplicados de los filtros por columna: id del control -> valor */
 let appliedValues = {};
 
 function leerControles() {
     const values = {};
-
-    $("advancedFilters")
-        ?.querySelectorAll("input, select")
-        .forEach(control => {
-            values[control.id] = control.value;
-        });
-
+    $("advancedFilters")?.querySelectorAll("input, select").forEach(control => {
+        values[control.id] = control.value;
+    });
     return values;
 }
 
 function escribirControles(values) {
-    $("advancedFilters")
-        ?.querySelectorAll("input, select")
-        .forEach(control => {
-            const isSelect = control.tagName === "SELECT";
-            const value = values[control.id] ?? (isSelect ? "ALL" : "");
-
-            control.value = value;
-
-            if (isSelect && control.value !== value) {
-                control.value = "ALL";
-            }
-        });
+    $("advancedFilters")?.querySelectorAll("input, select").forEach(control => {
+        const isSelect = control.tagName === "SELECT";
+        control.value = values[control.id] ?? (isSelect ? "ALL" : "");
+    });
 }
 
-/* Devuelve solo los filtros aplicados (no los que se están editando) */
 function leerFiltros() {
     const active = [];
-
     FILTERS.forEach(filter => {
         const id = filterId(filter);
-
         if (filter.type === "date") {
             const from = appliedValues[`${id}-from`] || "";
             const to = appliedValues[`${id}-to`] || "";
-
             if (from || to) {
-                const parts = [];
-
-                if (from) parts.push(`desde ${formatDateValue(from)}`);
-                if (to) parts.push(`hasta ${formatDateValue(to)}`);
-
-                active.push({
-                    filter,
-                    from,
-                    to,
-                    ids: [`${id}-from`, `${id}-to`],
-                    display: parts.join(" ")
-                });
+                active.push({ filter, from, to, ids: [`${id}-from`, `${id}-to`], display: `${from} a ${to}` });
             }
         } else if (filter.type === "text") {
             const raw = cleanValue(appliedValues[id]);
-
-            if (raw) {
-                active.push({
-                    filter,
-                    text: normalize(raw),
-                    ids: [id],
-                    display: raw
-                });
-            }
+            if (raw) active.push({ filter, text: normalize(raw), ids: [id], display: raw });
         } else {
             const value = appliedValues[id] || "ALL";
-
-            if (value !== "ALL") {
-                active.push({
-                    filter,
-                    value,
-                    ids: [id],
-                    display: value === EMPTY_OPTION ? "Sin dato" : value
-                });
-            }
+            if (value !== "ALL") active.push({ filter, value, ids: [id], display: value });
         }
     });
-
     return active;
 }
 
 function matchesFilter(sale, active) {
     const { filter } = active;
     const value = sale.fields[filter.key];
-
-    if (filter.type === "date") {
-        return Boolean(value) &&
-            (!active.from || value >= active.from) &&
-            (!active.to || value <= active.to);
-    }
-
-    if (filter.type === "text") {
-        return normalize(value).includes(active.text);
-    }
-
-    return active.value === EMPTY_OPTION
-        ? !value
-        : value === active.value;
+    if (filter.type === "date") return Boolean(value) && (!active.from || value >= active.from) && (!active.to || value <= active.to);
+    if (filter.type === "text") return normalize(value).includes(active.text);
+    return active.value === EMPTY_OPTION ? !value : value === active.value;
 }
 
-/* Etiquetas con los filtros activos; cada una se puede quitar con la × */
 function renderFiltrosActivos(active) {
     const container = $("activeFilters");
+    if (!container) return;
 
-    if (!container) {
-        return;
-    }
-
-    container.replaceChildren(
-        ...active.map(item => {
-            const chip = document.createElement("span");
-            const text = document.createElement("span");
-            const remove = document.createElement("button");
-
-            chip.className = "filter-chip";
-            text.textContent = `${item.filter.label}: ${item.display}`;
-
-            remove.type = "button";
-            remove.className = "filter-chip-remove";
-            remove.textContent = "×";
-            remove.setAttribute("aria-label", `Quitar filtro ${item.filter.label}`);
-            remove.addEventListener("click", () => limpiarFiltro(item.ids));
-
-            chip.append(text, remove);
-
-            return chip;
-        })
-    );
-}
-
-function limpiarFiltro(ids) {
-    ids.forEach(id => {
-        appliedValues[id] = $(id)?.tagName === "SELECT" ? "ALL" : "";
-    });
-
-    escribirControles(appliedValues);
-    resetPageAndFilter();
+    container.replaceChildren(...active.map(item => {
+        const chip = document.createElement("span");
+        chip.className = "filter-chip";
+        chip.innerHTML = `<span>${item.filter.label}: ${item.display}</span><button type="button" class="filter-chip-remove">×</button>`;
+        chip.querySelector("button").addEventListener("click", () => {
+            item.ids.forEach(id => { appliedValues[id] = "ALL"; });
+            escribirControles(appliedValues);
+            resetPageAndFilter();
+        });
+        return chip;
+    }));
 }
 
 function aplicarFiltros() {
@@ -1149,66 +765,8 @@ function aplicarFiltros() {
         active.every(filter => matchesFilter(sale, filter))
     );
 
-    const badge = $("filtersBadge");
-
-    if (badge) {
-        badge.textContent = active.length;
-        badge.hidden = active.length === 0;
-    }
-
-    const count = active.length + (search ? 1 : 0);
-
-    setText(
-        "clearFilters",
-        count ? `Limpiar filtros (${count})` : "Limpiar filtros"
-    );
-
     renderFiltrosActivos(active);
     renderAll();
-}
-
-
-/* ---------- Panel "Filtros" ---------- */
-
-function abrirFiltros() {
-    const panel = $("filtersPanel");
-
-    if (!panel) {
-        return;
-    }
-
-    escribirControles(appliedValues);
-
-    panel.hidden = false;
-    $("filtersToggle")?.setAttribute("aria-expanded", "true");
-}
-
-/* Cierra el panel y descarta lo que no se haya aplicado */
-function cerrarFiltros() {
-    const panel = $("filtersPanel");
-
-    if (!panel || panel.hidden) {
-        return;
-    }
-
-    panel.hidden = true;
-    $("filtersToggle")?.setAttribute("aria-expanded", "false");
-
-    escribirControles(appliedValues);
-}
-
-function aplicarPanel() {
-    appliedValues = leerControles();
-
-    resetPageAndFilter();
-    cerrarFiltros();
-}
-
-function limpiarTodosPanel() {
-    appliedValues = {};
-
-    escribirControles({});
-    resetPageAndFilter();
 }
 
 function resetPageAndFilter() {
@@ -1218,7 +776,7 @@ function resetPageAndFilter() {
 
 
 /* ============================================================
-   RENDER GENERAL
+   RENDER Y TABLA
 ============================================================ */
 
 function renderAll() {
@@ -1231,7 +789,6 @@ function renderAll() {
 
 function actualizarKPIs() {
     const stats = summarize(filteredSales);
-
     setText("kpiTotal", stats.total);
     setText("kpiActive", stats.active);
     setText("kpiProgress", stats.progress);
@@ -1239,215 +796,105 @@ function actualizarKPIs() {
     setText("kpiCancelled", stats.cancelled);
 }
 
+function renderStatusBadge(value) {
+    const text = cleanValue(value);
+    if (!text) return `<span class="status-badge status-neutral">—</span>`;
+    const normalized = normalize(text);
+    let className = "status-neutral";
 
-/* ============================================================
-   TABLA
-============================================================ */
+    if (/\b(CANCEL|RECHAZ)/.test(normalized)) className = "status-cancelled";
+    else if (/\b(ACTIV|VALID)/.test(normalized)) className = "status-active";
+    else if (/OBSERV/.test(normalized)) className = "status-observed";
+    else if (/PROGRES|PENDIENT/.test(normalized)) className = "status-progress";
 
-function setTableMessage(title, text) {
-    setText("tableEmptyTitle", title);
-    setText("tableEmptyText", text);
+    return `<span class="status-badge ${className}">${escapeHTML(text)}</span>`;
 }
 
 function renderTableHead() {
     const head = $("tableHead");
-
-    const cells = MAIN_COLUMNS
-        .map(column => `<th scope="col">${escapeHTML(column.label)}</th>`)
-        .join("");
-
-    head.innerHTML = `<tr>${cells}<th scope="col">ACCIÓN</th></tr>`;
+    if (!head) return;
+    head.innerHTML = `<tr>${MAIN_COLUMNS.map(col => `<th>${col.label}</th>`).join("")}<th>ACCIÓN</th></tr>`;
 }
 
 function renderTabla() {
     const body = $("tableBody");
     const empty = $("tableEmpty");
-
-    if (!body || !$("tableHead")) {
-        return;
-    }
+    if (!body) return;
 
     renderTableHead();
-
-    const totalPages = Math.max(
-        1,
-        Math.ceil(filteredSales.length / ROWS_PER_PAGE)
-    );
-
+    const totalPages = Math.max(1, Math.ceil(filteredSales.length / ROWS_PER_PAGE));
     currentPage = clamp(currentPage, 1, totalPages);
 
     const start = (currentPage - 1) * ROWS_PER_PAGE;
     const pageRows = filteredSales.slice(start, start + ROWS_PER_PAGE);
 
-    setText(
-        "paginationInfo",
-        `${filteredSales.length} ${filteredSales.length === 1 ? "registro" : "registros"}`
-    );
-
+    setText("paginationInfo", `${filteredSales.length} registros`);
     body.replaceChildren();
 
     if (!pageRows.length) {
-        setTableMessage(
-            "No se encontraron ventas",
-            "Prueba cambiando los filtros o la búsqueda."
-        );
-
-        empty.hidden = false;
+        if (empty) empty.hidden = false;
         actualizarPaginacion(0, 0);
-
         return;
     }
-
-    empty.hidden = true;
+    if (empty) empty.hidden = true;
 
     const fragment = document.createDocumentFragment();
+    pageRows.forEach(sale => {
+        const tr = document.createElement("tr");
+        MAIN_COLUMNS.forEach(column => {
+            const td = document.createElement("td");
+            let value = getValue(sale.row, column.key, column.occurrence || 1);
+            if (DATE_KEYS.includes(column.key)) value = formatDateValue(value);
 
-    pageRows.forEach(sale => fragment.appendChild(createTableRow(sale)));
+            if (STATUS_KEYS.includes(column.key)) {
+                td.innerHTML = renderStatusBadge(value);
+            } else {
+                td.textContent = value || "—";
+            }
+            tr.appendChild(td);
+        });
 
-    body.appendChild(fragment);
+        const actionTd = document.createElement("td");
+        const btn = document.createElement("button");
+        btn.className = "action-button";
+        btn.textContent = "Ver detalle";
+        btn.addEventListener("click", () => mostrarDetalle(sale));
+        actionTd.appendChild(btn);
+        tr.appendChild(actionTd);
 
-    actualizarPaginacion(currentPage, totalPages);
-}
-
-function createTableRow(sale) {
-    const tr = document.createElement("tr");
-
-    MAIN_COLUMNS.forEach(column => {
-        const td = document.createElement("td");
-
-        let value = getValue(sale.row, column.key, column.occurrence || 1);
-
-        if (DATE_KEYS.includes(column.key)) {
-            value = formatDateValue(value);
-        }
-
-        if (STATUS_KEYS.includes(column.key)) {
-            td.innerHTML = renderStatus(value);
-        } else if (value) {
-            td.textContent = value;
-        } else {
-            td.innerHTML = `<span class="table-empty-value">—</span>`;
-        }
-
-        if (column.key === "n") {
-            td.classList.add("table-number");
-        }
-
-        tr.appendChild(td);
+        fragment.appendChild(tr);
     });
 
-    const actionTd = document.createElement("td");
-    const button = document.createElement("button");
-
-    button.type = "button";
-    button.className = "action-button";
-    button.textContent = "Ver detalle";
-    button.addEventListener("click", () => mostrarDetalle(sale));
-
-    actionTd.appendChild(button);
-    tr.appendChild(actionTd);
-
-    return tr;
-}
-
-function renderStatus(value) {
-    const text = cleanValue(value);
-
-    if (!text) {
-        return `<span class="status-badge status-neutral">—</span>`;
-    }
-
-    const normalized = normalize(text);
-
-    let className = "status-neutral";
-
-    if (/\b(CANCEL|RECHAZ)/.test(normalized)) {
-        className = "status-cancelled";
-    } else if (/\b(ACTIV|VALID)/.test(normalized)) {
-        className = "status-active";
-    } else if (/OBSERV/.test(normalized)) {
-        className = "status-observed";
-    } else if (/PROGRES|PENDIENT/.test(normalized)) {
-        className = "status-progress";
-    }
-
-    return `<span class="status-badge ${className}">${escapeHTML(text)}</span>`;
-}
-
-
-/* ============================================================
-   PAGINACIÓN
-============================================================ */
-
-function createPageButton(text, disabled, label, action) {
-    const button = document.createElement("button");
-
-    button.type = "button";
-    button.className = "page-button";
-    button.textContent = text;
-    button.disabled = disabled;
-    button.setAttribute("aria-label", label);
-    button.addEventListener("click", action);
-
-    return button;
-}
-
-function goToPage(page) {
-    currentPage = page;
-    renderTabla();
-
-    $("tableBody")
-        ?.closest(".section-card")
-        ?.scrollIntoView({ behavior: "smooth", block: "start" });
+    body.appendChild(fragment);
+    actualizarPaginacion(currentPage, totalPages);
 }
 
 function actualizarPaginacion(page, totalPages) {
     const pagination = $("pagination");
-
-    if (!pagination) {
-        return;
-    }
-
+    if (!pagination) return;
     pagination.replaceChildren();
+    if (totalPages <= 1) return;
 
-    if (totalPages <= 1) {
-        return;
-    }
-
-    const maxButtons = 7;
-
-    let start = Math.max(1, page - Math.floor(maxButtons / 2));
-    const end = Math.min(totalPages, start + maxButtons - 1);
-
-    start = Math.max(1, end - maxButtons + 1);
-
-    pagination.appendChild(
-        createPageButton("‹", page <= 1, "Página anterior", () => goToPage(page - 1))
-    );
-
-    for (let i = start; i <= end; i++) {
-        const button = createPageButton(i, false, `Página ${i}`, () => goToPage(i));
-
-        if (i === page) {
-            button.classList.add("active");
-            button.setAttribute("aria-current", "page");
-        }
-
+    for (let i = 1; i <= totalPages; i++) {
+        const button = document.createElement("button");
+        button.className = `page-button ${i === page ? "active" : ""}`;
+        button.textContent = i;
+        button.addEventListener("click", () => {
+            currentPage = i;
+            renderTabla();
+        });
         pagination.appendChild(button);
     }
-
-    pagination.appendChild(
-        createPageButton("›", page >= totalPages, "Página siguiente", () => goToPage(page + 1))
-    );
 }
 
 
 /* ============================================================
-   ANALYTICS
+   ANALYTICS Y KPIs DE CANAL
 ============================================================ */
 
 function renderAnalytics() {
     const stats = summarize(filteredSales);
+    setText("analyticsTotal", stats.total);
 
     const rows = [
         ["Active", stats.active],
@@ -1456,139 +903,78 @@ function renderAnalytics() {
         ["Cancelled", stats.cancelled]
     ];
 
-    setText("analyticsTotal", stats.total);
-
     rows.forEach(([name, count]) => {
         const pct = percentage(count, stats.total);
-
         setText(`analytics${name}Pct`, formatPercentage(pct));
         setWidth(`analyticsBar${name}`, pct);
     });
 }
 
-
-/* ============================================================
-   KPIs POR CANAL
-============================================================ */
-
 function setPie(id, percentageValue, centerValue, label) {
     const element = $(id);
-
-    if (!element) {
-        return;
-    }
-
+    if (!element) return;
     element.style.setProperty("--value", clamp(percentageValue));
 
     const value = element.querySelector(".pie-value");
     const labelElement = element.querySelector(".pie-label");
-
     if (value) value.textContent = centerValue;
     if (labelElement) labelElement.textContent = label;
 }
 
-/* Escribe "<prefijo>Q" y "<prefijo>Pct" */
 function setLine(prefix, count, total) {
     setText(`${prefix}Q`, count);
     setText(`${prefix}Pct`, formatPercentage(percentage(count, total)));
 }
 
-function setChannelPies(chartId, totalChartId, stats) {
-    const activePct = percentage(stats.active, stats.total);
-
-    setPie(chartId, activePct, formatPercentage(activePct), "ACTIVAS");
-    setPie(totalChartId, stats.total > 0 ? 100 : 0, stats.total, "TOTAL");
-}
-
 function calculateChannelKPIs(currentSales) {
-    renderTiendaKPI(currentSales.filter(sale => sale.channel === "tienda"));
-    renderMultipedidoKPI(currentSales.filter(sale => sale.isMulti));
-    renderDeliveryKPI(currentSales.filter(sale => sale.channel === "delivery"));
-    renderTableuKPI(currentSales);
-}
+    const tiendaSales = currentSales.filter(s => s.channel === "tienda");
+    const tiendaStats = summarize(tiendaSales);
+    setLine("tiendaActivas", tiendaStats.active, tiendaStats.total);
+    setLine("tiendaNoRecoge", tiendaStats.cancelled, tiendaStats.total);
+    setLine("tiendaProgreso", tiendaStats.progress, tiendaStats.total);
+    setText("tiendaEfectividadQ", tiendaStats.total);
+    setText("tiendaEfectividadPct", formatPercentage(percentage(tiendaStats.active, tiendaStats.total)));
+    setPie("chartTienda", percentage(tiendaStats.active, tiendaStats.total), formatPercentage(percentage(tiendaStats.active, tiendaStats.total)), "ACTIVAS");
+    setPie("chartTiendaTotal", tiendaStats.total > 0 ? 100 : 0, tiendaStats.total, "TOTAL");
 
-/* Tableu: el 100% es la suma de órdenes OT (no el número de ventas) */
-function getTableuStats(list) {
-    const stats = { total: 0, active: 0, cancelled: 0, progress: 0, observed: 0 };
+    const multiSales = currentSales.filter(s => s.isMulti);
+    const multiStats = summarize(multiSales);
+    setLine("multiActivas", multiStats.active, multiStats.total);
+    setLine("multiCanceladas", multiStats.cancelled, multiStats.total);
+    setLine("multiProgreso", multiStats.progress, multiStats.total);
+    setText("multiTotalQ", multiStats.total);
+    setText("multiTotalPct", multiStats.total ? "100%" : "0%");
+    setPie("chartMulti", percentage(multiStats.active, multiStats.total), formatPercentage(percentage(multiStats.active, multiStats.total)), "ACTIVAS");
+    setPie("chartMultiTotal", multiStats.total > 0 ? 100 : 0, multiStats.total, "TOTAL");
 
-    for (const sale of list) {
-        const orders = sale.otCount;
+    const delSales = currentSales.filter(s => s.channel === "delivery");
+    const delStats = summarize(delSales);
+    setLine("deliveryActivas", delStats.active, delStats.total);
+    setLine("deliveryCanceladas", delStats.cancelled, delStats.total);
+    setLine("deliveryProgreso", delStats.progress, delStats.total);
+    setText("deliveryTotalQ", delStats.total);
+    setText("deliveryEfectividadPct", formatPercentage(percentage(delStats.active, delStats.total)));
+    setPie("chartDelivery", percentage(delStats.active, delStats.total), formatPercentage(percentage(delStats.active, delStats.total)), "ACTIVAS");
+    setPie("chartDeliveryTotal", delStats.total > 0 ? 100 : 0, delStats.total, "TOTAL");
 
-        if (!orders) {
-            continue;
-        }
+    let tableuTotal = 0, tableuActive = 0, tableuCancel = 0, tableuProgress = 0;
+    currentSales.forEach(s => {
+        const orders = s.otCount;
+        if (!orders) return;
+        tableuTotal += orders;
+        if (s.status === "active") tableuActive += orders;
+        else if (s.status === "progress") tableuProgress += orders;
+        else tableuCancel += orders;
+    });
 
-        stats.total += orders;
-
-        if (sale.status === "active") stats.active += orders;
-        else if (sale.status === "progress") stats.progress += orders;
-        else if (sale.status === "observed") stats.observed += orders;
-        else stats.cancelled += orders; /* cancelada + no recoge */
-    }
-
-    stats.alcance = percentage(stats.active, stats.total);
-
-    return stats;
-}
-
-function renderTableuKPI(list) {
-    const stats = getTableuStats(list);
-
-    setLine("tableuActivas", stats.active, stats.total);
-    setLine("tableuCanceladas", stats.cancelled, stats.total);
-    setLine("tableuProgreso", stats.progress, stats.total);
-
-    setText("tableuTotalQ", stats.total);
-    setText("tableuTotalPct", stats.total ? "100%" : "0%");
-
-    setPie("chartTableu", stats.alcance, formatPercentage(stats.alcance), "ACTIVAS");
-    setPie("chartTableuTotal", stats.total > 0 ? 100 : 0, stats.total, "TOTAL OT");
-}
-
-function renderTiendaKPI(rows) {
-    const stats = summarize(rows);
-
-    setLine("tiendaActivas", stats.active, stats.total);
-    /* Canceladas = canceladas + "no recoge", igual que en el resto del panel */
-    setLine("tiendaNoRecoge", stats.cancelled, stats.total);
-    setLine("tiendaProgreso", stats.progress, stats.total);
-
-    setText("tiendaEfectividadQ", stats.total);
-    setText(
-        "tiendaEfectividadPct",
-        formatPercentage(percentage(stats.active, stats.total))
-    );
-
-    setChannelPies("chartTienda", "chartTiendaTotal", stats);
-}
-
-function renderMultipedidoKPI(rows) {
-    const stats = summarize(rows);
-
-    setLine("multiActivas", stats.active, stats.total);
-    setLine("multiCanceladas", stats.cancelled, stats.total);
-    setLine("multiProgreso", stats.progress, stats.total);
-
-    setText("multiTotalQ", stats.total);
-    setText("multiTotalPct", stats.total ? "100%" : "0%");
-
-    setChannelPies("chartMulti", "chartMultiTotal", stats);
-}
-
-function renderDeliveryKPI(rows) {
-    const stats = summarize(rows);
-
-    setLine("deliveryActivas", stats.active, stats.total);
-    setLine("deliveryCanceladas", stats.cancelled, stats.total);
-    setLine("deliveryProgreso", stats.progress, stats.total);
-
-    setText("deliveryTotalQ", stats.total);
-    setText(
-        "deliveryEfectividadPct",
-        formatPercentage(percentage(stats.active, stats.total))
-    );
-
-    setChannelPies("chartDelivery", "chartDeliveryTotal", stats);
+    setLine("tableuActivas", tableuActive, tableuTotal);
+    setLine("tableuCanceladas", tableuCancel, tableuTotal);
+    setLine("tableuProgreso", tableuProgress, tableuTotal);
+    setText("tableuTotalQ", tableuTotal);
+    setText("tableuTotalPct", tableuTotal ? "100%" : "0%");
+    const tableuAlcance = percentage(tableuActive, tableuTotal);
+    setPie("chartTableu", tableuAlcance, formatPercentage(tableuAlcance), "ACTIVAS");
+    setPie("chartTableuTotal", tableuTotal > 0 ? 100 : 0, tableuTotal, "TOTAL OT");
 }
 
 
@@ -1596,23 +982,11 @@ function renderDeliveryKPI(rows) {
    PROYECCIÓN DE COMISIONES
 ============================================================ */
 
-function getCommissionRange(total) {
-    return COMMISSION_RANGES.find(
-        range => total >= range.from && total <= range.to
-    ) || null;
-}
-
-function getNextCommissionRange(total) {
-    return COMMISSION_RANGES.find(range => total < range.from) || null;
-}
-
 function calculateProjection(currentSales) {
     const activeSales = currentSales.filter(sale => sale.status === "active");
     const activeCount = activeSales.length;
 
-    const currentRange = getCommissionRange(activeCount);
-
-    /* Con menos de 20 ventas se usa el Rango 1 solo como referencia */
+    const currentRange = COMMISSION_RANGES.find(r => activeCount >= r.from && activeCount <= r.to);
     const pricingRange = currentRange || COMMISSION_RANGES[0];
 
     const totals = { pos: 0, alta: 0, prepago: 0, multi: 0 };
@@ -1623,162 +997,38 @@ function calculateProjection(currentSales) {
         counts[sale.commissionType]++;
     });
 
-    const baseCommission =
-        totals.pos + totals.alta + totals.prepago + totals.multi;
-
-    /* Ajuste por Tableu (sobre órdenes OT) */
-    const tableuStats = getTableuStats(currentSales);
-    const tableuRule = tableuStats.total
-        ? findRule(TABLEU_RULES, tableuStats.alcance)
-        : null;
-
-    /* Ajuste por Multipedido (sobre ventas activas) */
-    const multiActive = activeSales.filter(sale => sale.isMulti).length;
-    const multiAlcance = percentage(multiActive, activeCount);
-    const multiRule = activeCount
-        ? findRule(MULTI_RULES, multiAlcance)
-        : null;
-
-    const tableuAmount = baseCommission * ((tableuRule?.pct || 0) / 100);
-    const multiAmount = baseCommission * ((multiRule?.pct || 0) / 100);
-
-    const totalCommission = baseCommission + tableuAmount + multiAmount;
-
-    const missing = Math.max(TARGET_SALES - activeCount, 0);
-    const progressPct = Math.min(100, percentage(activeCount, TARGET_SALES));
+    const baseCommission = totals.pos + totals.alta + totals.prepago + totals.multi;
 
     setText("projectionActiveSales", activeCount);
-    setText(
-        "projectionCurrentRange",
-        currentRange ? `Rango ${currentRange.range}` : "Aún no alcanzado"
-    );
-    setText("projectionMissingLabel", `Faltan para Rango ${TOP_RANGE.range}`);
-    setText("projectionMissingRange", missing);
+    setText("projectionCurrentRange", currentRange ? `Rango ${currentRange.range}` : "Aún no alcanzado");
+    setText("projectionMissingRange", Math.max(TARGET_SALES - activeCount, 0));
+    setText("projectionTotal", formatMoney(baseCommission));
 
-    setText("projectionTotal", formatMoney(totalCommission));
     setText("projectionPos", formatMoney(totals.pos));
     setText("projectionAlta", formatMoney(totals.alta));
     setText("projectionPrepago", formatMoney(totals.prepago));
     setText("projectionMulti", formatMoney(totals.multi));
 
-    /* Cuántas ventas de cada tipo y cuánto vale cada una según el rango */
-    const rangeLabel = currentRange
-        ? `Tarifa Rango ${currentRange.range}`
-        : `Tarifa Rango ${pricingRange.range} (referencia)`;
+    setText("projectionPosCount", `${counts.pos} ventas`);
+    setText("projectionAltaCount", `${counts.alta} ventas`);
+    setText("projectionPrepagoCount", `${counts.prepago} ventas`);
+    setText("projectionMultiCount", `${counts.multi} ventas`);
 
-    [
-        ["projectionPos", "pos"],
-        ["projectionAlta", "alta"],
-        ["projectionPrepago", "prepago"],
-        ["projectionMulti", "multi"]
-    ].forEach(([id, type]) => {
-        setText(`${id}Count`, `${counts[type]} ${counts[type] === 1 ? "venta" : "ventas"}`);
-        setText(`${id}Price`, `${formatMoney(pricingRange[type])} c/u`);
-        setText(`${id}Note`, rangeLabel);
-    });
-
-    renderAdjustment(
-        "projectionTableu",
-        tableuAmount,
-        tableuRule,
-        tableuStats.alcance,
-        `${tableuStats.active} de ${tableuStats.total} órdenes OT activas`,
-        "Sin órdenes OT en la hoja"
-    );
-
-    renderAdjustment(
-        "projectionMultipedido",
-        multiAmount,
-        multiRule,
-        multiAlcance,
-        `${multiActive} multipedido activas de ${activeCount} activas`,
-        "Sin ventas activas"
-    );
-
-    setText(
-        "projectionNote",
-        currentRange
-            ? `Tarifa aplicada: Rango ${currentRange.range}.`
-            : `Aún no se alcanzan ${COMMISSION_RANGES[0].from} ventas. Se usa Rango 1 como referencia de proyección.`
-    );
-
-    setText("rangeProgressTitle", `Progreso hacia Rango ${TOP_RANGE.range}`);
-    setText("rangeProgressText", `${activeCount} de ${TARGET_SALES} ventas`);
+    setWidth("rangeProgressBar", Math.min(100, percentage(activeCount, TARGET_SALES)));
     setText("rangeProgressCurrent", `${activeCount} / ${TARGET_SALES}`);
-    setWidth("rangeProgressBar", progressPct);
-
-    const track = $("rangeProgressTrack");
-
-    if (track) {
-        track.setAttribute("aria-valuemax", TARGET_SALES);
-        track.setAttribute("aria-valuenow", Math.min(activeCount, TARGET_SALES));
-    }
 
     renderCommissionTable(currentRange, activeCount);
 }
 
-/* Caja de ajuste: monto, alcance a la izquierda y bono/castigo a la derecha */
-function renderAdjustment(id, amount, rule, alcance, detail, emptyText) {
-    const value = $(id);
-
-    if (value) {
-        value.textContent = formatSignedMoney(amount);
-        value.classList.toggle("is-positive", amount > 0);
-        value.classList.toggle("is-negative", amount < 0);
-    }
-
-    const effect = $(`${id}Effect`);
-
-    if (!rule) {
-        setText(`${id}Alcance`, "Alcance: —");
-        setText(`${id}Note`, emptyText);
-
-        if (effect) {
-            effect.textContent = "";
-            effect.className = "commission-effect";
-        }
-
-        return;
-    }
-
-    let text = "No se aplica descuento";
-    let kind = "neutral";
-
-    if (rule.pct > 0) {
-        text = `Bono: +${rule.pct}%`;
-        kind = "bonus";
-    } else if (rule.pct < 0) {
-        text = `Castigo: -${Math.abs(rule.pct)}%`;
-        kind = "penalty";
-    }
-
-    setText(`${id}Alcance`, `Alcance: ${formatPercentage(alcance)}`);
-    setText(`${id}Note`, detail);
-
-    if (effect) {
-        effect.textContent = text;
-        effect.className = `commission-effect effect-${kind}`;
-    }
-}
-
 function renderCommissionTable(currentRange, activeCount) {
     const tbody = $("commissionTableBody");
-
-    if (!tbody) {
-        return;
-    }
-
-    const nextRange = getNextCommissionRange(activeCount);
+    if (!tbody) return;
 
     tbody.innerHTML = COMMISSION_RANGES.map(range => {
         let rowClass = "";
-
         if (currentRange && range.range === currentRange.range) {
             rowClass = "current-range";
-        } else if (nextRange && range.range === nextRange.range) {
-            rowClass = "next-range";
         }
-
         return `
             <tr class="${rowClass}">
                 <td>Rango ${range.range}</td>
@@ -1795,37 +1045,22 @@ function renderCommissionTable(currentRange, activeCount) {
 
 
 /* ============================================================
-   DETALLE
+   DETALLE Y TOAST
 ============================================================ */
 
-/* Acepta una venta o un índice dentro de filteredSales (compatibilidad) */
-function mostrarDetalle(saleOrIndex) {
-    const sale = typeof saleOrIndex === "number"
-        ? filteredSales[saleOrIndex]
-        : saleOrIndex;
-
+function mostrarDetalle(sale) {
     const body = $("detailBody");
-
-    if (!sale || !body) {
-        return;
-    }
+    const overlay = $("detailOverlay");
+    if (!sale || !body || !overlay) return;
 
     const row = sale.row;
-
     setText("detailTitle", getValue(row, "nombre") || "Venta sin nombre");
-    setText(
-        "detailSubtitle",
-        `Venta #${getValue(row, "n") || "—"} · DNI ${getValue(row, "dni") || "—"}`
-    );
+    setText("detailSubtitle", `Venta #${getValue(row, "n") || "—"} · DNI ${getValue(row, "dni") || "—"}`);
 
     body.innerHTML = DETAIL_SECTIONS.map(section => {
         const fieldsHTML = section.fields.map(([label, key, occurrence = 1]) => {
             let value = getValue(row, key, occurrence);
-
-            if (DATE_KEYS.includes(key)) {
-                value = formatDateValue(value);
-            }
-
+            if (DATE_KEYS.includes(key)) value = formatDateValue(value);
             return `
                 <div class="detail-item">
                     <span class="detail-label">${escapeHTML(label)}</span>
@@ -1842,265 +1077,28 @@ function mostrarDetalle(saleOrIndex) {
         `;
     }).join("");
 
-    body.scrollTop = 0;
-
-    abrirDetalle();
-}
-
-function abrirDetalle() {
-    const overlay = $("detailOverlay");
-
-    if (!overlay) {
-        return;
-    }
-
-    lastFocusedElement = document.activeElement;
-
     overlay.hidden = false;
-    document.body.style.overflow = "hidden";
-
-    $("closeDetail")?.focus();
 }
 
 function cerrarDetalle() {
     const overlay = $("detailOverlay");
-
-    if (!overlay || overlay.hidden) {
-        return;
-    }
-
-    overlay.hidden = true;
-    document.body.style.overflow = "";
-
-    if (lastFocusedElement && document.contains(lastFocusedElement)) {
-        lastFocusedElement.focus();
-    }
-
-    lastFocusedElement = null;
+    if (overlay) overlay.hidden = true;
 }
-
-/* Mantiene el foco dentro del panel mientras está abierto */
-function trapFocus(event) {
-    const overlay = $("detailOverlay");
-
-    if (event.key !== "Tab" || !overlay || overlay.hidden) {
-        return;
-    }
-
-    const focusable = overlay.querySelectorAll(
-        'button, [href], input, select, [tabindex]:not([tabindex="-1"])'
-    );
-
-    if (!focusable.length) {
-        return;
-    }
-
-    const first = focusable[0];
-    const last = focusable[focusable.length - 1];
-
-    if (event.shiftKey && document.activeElement === first) {
-        event.preventDefault();
-        last.focus();
-    } else if (!event.shiftKey && document.activeElement === last) {
-        event.preventDefault();
-        first.focus();
-    }
-}
-
-
-/* ============================================================
-   TOAST
-============================================================ */
 
 function mostrarToast(message) {
     const toast = $("toast");
-
-    if (!toast) {
-        return;
-    }
-
+    if (!toast) return;
     toast.textContent = message;
     toast.hidden = false;
-
     clearTimeout(toastTimer);
-
-    toastTimer = setTimeout(() => {
-        toast.hidden = true;
-    }, 4000);
+    toastTimer = setTimeout(() => { toast.hidden = true; }, 4000);
 }
 
 
 /* ============================================================
-   EVENTOS
+   AUTENTICACIÓN Y LOGIN (Texto plano directo)
 ============================================================ */
 
-function configurarEventos() {
-    const searchInput = $("searchInput");
-    const advanced = $("advancedFilters");
-
-    /* Espera a que el usuario termine de escribir */
-    searchInput?.addEventListener("input", () => {
-        clearTimeout(searchTimer);
-        searchTimer = setTimeout(resetPageAndFilter, SEARCH_DEBOUNCE);
-    });
-
-    $("filtersToggle")?.addEventListener("click", () => {
-        if ($("filtersPanel")?.hidden) {
-            abrirFiltros();
-        } else {
-            cerrarFiltros();
-        }
-    });
-
-    $("filtersApply")?.addEventListener("click", aplicarPanel);
-    $("filtersCancel")?.addEventListener("click", cerrarFiltros);
-    $("filtersReset")?.addEventListener("click", limpiarTodosPanel);
-
-    advanced?.addEventListener("keydown", event => {
-        if (event.key === "Enter" && event.target.matches("input")) {
-            event.preventDefault();
-            aplicarPanel();
-        }
-    });
-
-    /* Clic fuera del panel = cancelar */
-    document.addEventListener("click", event => {
-        const menu = document.querySelector(".filters-menu");
-
-        if (menu && !menu.contains(event.target)) {
-            cerrarFiltros();
-        }
-    });
-
-    $("clearFilters")?.addEventListener("click", () => {
-        if (searchInput) searchInput.value = "";
-
-        appliedValues = {};
-        escribirControles({});
-
-        cerrarFiltros();
-        resetPageAndFilter();
-    });
-
-    $("refreshButton")?.addEventListener("click", () => cargarDatos(true));
-
-    $("closeDetail")?.addEventListener("click", cerrarDetalle);
-
-    $("detailOverlay")?.addEventListener("click", event => {
-        if (event.target === event.currentTarget) {
-            cerrarDetalle();
-        }
-    });
-
-    document.addEventListener("keydown", event => {
-        if (event.key === "Escape") {
-            cerrarFiltros();
-            cerrarDetalle();
-        }
-
-        trapFocus(event);
-    });
-}
-
-function iniciarActualizacionAutomatica() {
-    clearInterval(refreshTimer);
-
-    refreshTimer = setInterval(() => {
-        /* No consume datos si la pestaña está oculta */
-        if (!document.hidden) {
-            cargarDatos(false);
-        }
-    }, REFRESH_INTERVAL);
-
-    /* Al volver a la pestaña, actualiza enseguida */
-    document.addEventListener("visibilitychange", () => {
-        if (!document.hidden) {
-            cargarDatos(false);
-        }
-    });
-}
-
-
-/* ============================================================
-   INICIO
-============================================================ */
-
-/* ----- SHA-256 (se usa para no guardar las contraseñas en texto) ----- */
-function sha256Hex(text) {
-    const K = new Uint32Array([
-        0x428a2f98, 0x71374491, 0xb5c0fbcf, 0xe9b5dba5, 0x3956c25b, 0x59f111f1, 0x923f82a4, 0xab1c5ed5,
-        0xd807aa98, 0x12835b01, 0x243185be, 0x550c7dc3, 0x72be5d74, 0x80deb1fe, 0x9bdc06a7, 0xc19bf174,
-        0xe49b69c1, 0xefbe4786, 0x0fc19dc6, 0x240ca1cc, 0x2de92c6f, 0x4a7484aa, 0x5cb0a9dc, 0x76f988da,
-        0x983e5152, 0xa831c66d, 0xb00327c8, 0xbf597fc7, 0xc6e00bf3, 0xd5a79147, 0x06ca6351, 0x14292967,
-        0x27b70a85, 0x2e1b2138, 0x4d2c6dfc, 0x53380d13, 0x650a7354, 0x766a0abb, 0x81c2c92e, 0x92722c85,
-        0xa2bfe8a1, 0xa81a664b, 0xc24b8b70, 0xc76c51a3, 0xd192e819, 0xd6990624, 0xf40e3585, 0x106aa070,
-        0x19a4c116, 0x1e376c08, 0x2748774c, 0x34b0bcb5, 0x391c0cb3, 0x4ed8aa4a, 0x5b9cca4f, 0x682e6ff3,
-        0x748f82ee, 0x78a5636f, 0x84c87814, 0x8cc70208, 0x90befffa, 0xa4506ceb, 0xbef9a3f7, 0xc67178f2
-    ]);
-
-    const H = new Uint32Array([
-        0x6a09e667, 0xbb67ae85, 0x3c6ef372, 0xa54ff53a, 0x510e527f, 0x9b05688c, 0x1f83d9ab, 0x5be0cd19
-    ]);
-
-    const bytes = new TextEncoder().encode(text);
-    const length = bytes.length;
-    const paddedLength = (((length + 8) >> 6) + 1) << 6;
-    const data = new Uint8Array(paddedLength);
-    const view = new DataView(data.buffer);
-    const w = new Uint32Array(64);
-    const rotr = (x, n) => (x >>> n) | (x << (32 - n));
-
-    data.set(bytes);
-    data[length] = 0x80;
-    view.setUint32(paddedLength - 8, Math.floor((length * 8) / 4294967296));
-    view.setUint32(paddedLength - 4, (length * 8) >>> 0);
-
-    for (let offset = 0; offset < paddedLength; offset += 64) {
-        for (let i = 0; i < 16; i++) {
-            w[i] = view.getUint32(offset + i * 4);
-        }
-
-        for (let i = 16; i < 64; i++) {
-            const s0 = rotr(w[i - 15], 7) ^ rotr(w[i - 15], 18) ^ (w[i - 15] >>> 3);
-            const s1 = rotr(w[i - 2], 17) ^ rotr(w[i - 2], 19) ^ (w[i - 2] >>> 10);
-
-            w[i] = (w[i - 16] + s0 + w[i - 7] + s1) >>> 0;
-        }
-
-        let [a, b, c, d, e, f, g, h] = H;
-
-        for (let i = 0; i < 64; i++) {
-            const S1 = rotr(e, 6) ^ rotr(e, 11) ^ rotr(e, 25);
-            const ch = (e & f) ^ (~e & g);
-            const t1 = (h + S1 + ch + K[i] + w[i]) >>> 0;
-            const S0 = rotr(a, 2) ^ rotr(a, 13) ^ rotr(a, 22);
-            const maj = (a & b) ^ (a & c) ^ (b & c);
-            const t2 = (S0 + maj) >>> 0;
-
-            h = g;
-            g = f;
-            f = e;
-            e = (d + t1) >>> 0;
-            d = c;
-            c = b;
-            b = a;
-            a = (t1 + t2) >>> 0;
-        }
-
-        H[0] += a; H[1] += b; H[2] += c; H[3] += d;
-        H[4] += e; H[5] += f; H[6] += g; H[7] += h;
-    }
-
-    return Array.from(H, value => value.toString(16).padStart(8, "0")).join("");
-}
-
-/* Huella de una contraseña (usuario en minúsculas + ":" + contraseña) */
-function hashClave(usuario, clave) {
-    return sha256Hex(`${String(usuario).trim().toLowerCase()}:${clave}`);
-}
-
-
-/* ----- Sesión ----- */
 function findUser(id) {
     return Object.prototype.hasOwnProperty.call(USERS_CONFIG, id)
         ? { id, ...USERS_CONFIG[id] }
@@ -2109,136 +1107,89 @@ function findUser(id) {
 
 function validarCredenciales(usuario, clave) {
     const user = findUser(String(usuario).trim().toLowerCase());
-
     if (!user || user.pass !== clave) {
         return null;
     }
-
     return user;
 }
 
-function mostrarLogin() {
-    $("appShell").hidden = true;
-    $("loginScreen").hidden = false;
-    document.title = "Iniciar sesión | Seguimiento de ventas";
-    $("loginUser").focus();
-}
-
-function entrar(user) {
-    currentUser = user;
-    CSV_URL = user.csvUrl;
-
-    try {
-        sessionStorage.setItem(SESSION_KEY, user.id);
-    } catch (error) { /* sin almacenamiento: pedirá la clave al recargar */ }
-
-    setText("userName", user.name);
-    document.title = `Seguimiento de ventas | ${user.name}`;
-
-    $("loginScreen").hidden = true;
-    $("appShell").hidden = false;
-
-    iniciarApp();
-}
-
-/* Cerrar sesión recarga la página: así no queda ningún dato de la sesión anterior */
-function cerrarSesion() {
-    try {
-        sessionStorage.removeItem(SESSION_KEY);
-    } catch (error) { /* ignorar */ }
-
-    location.reload();
-}
-
 function configurarLogin() {
-    const form = $("loginForm");
-    const error = $("loginError");
-    let failedAttempts = 0;
-    let lockedUntil = 0;
+    const loginForm = $("loginForm");
+    const loginOverlay = $("loginScreen");
+    const logoutButton = $("logoutButton");
 
-    const showError = message => {
-        error.textContent = message;
-        error.hidden = false;
-    };
+    const savedUser = sessionStorage.getItem(SESSION_KEY);
+    if (savedUser && USERS_CONFIG[savedUser]) {
+        const user = findUser(savedUser);
+        if (user) {
+            CSV_URL = user.csvUrl;
+            setText("userName", user.name);
+            if (loginOverlay) loginOverlay.hidden = true;
+            $("appShell").hidden = false;
+            iniciarDashboard();
+        }
+    }
 
-    form.addEventListener("submit", event => {
+    loginForm?.addEventListener("submit", event => {
         event.preventDefault();
+        const userInput = $("loginUser").value;
+        const passInput = $("loginPass").value;
+        const errorBox = $("loginError");
 
-        const waitMs = lockedUntil - Date.now();
+        const user = validarCredenciales(userInput, passInput);
 
-        if (waitMs > 0) {
-            showError(`Demasiados intentos. Espera ${Math.ceil(waitMs / 1000)} segundos.`);
-            return;
+        if (user) {
+            sessionStorage.setItem(SESSION_KEY, user.id);
+            CSV_URL = user.csvUrl;
+            setText("userName", user.name);
+            if (loginOverlay) loginOverlay.hidden = true;
+            $("appShell").hidden = false;
+            if (errorBox) errorBox.hidden = true;
+            iniciarDashboard();
+        } else if (errorBox) {
+            errorBox.textContent = "Usuario o contraseña incorrectos.";
+            errorBox.hidden = false;
         }
-
-        const user = validarCredenciales($("loginUser").value, $("loginPass").value);
-
-        if (!user) {
-            failedAttempts++;
-
-            if (failedAttempts >= MAX_LOGIN_ATTEMPTS) {
-                failedAttempts = 0;
-                lockedUntil = Date.now() + LOGIN_LOCK_MS;
-                showError("Demasiados intentos. Espera 30 segundos e inténtalo de nuevo.");
-            } else {
-                showError("Usuario o contraseña incorrectos.");
-            }
-
-            $("loginPass").select();
-            return;
-        }
-
-        error.hidden = true;
-        $("loginPass").value = "";
-        entrar(user);
     });
 
-    $("togglePass").addEventListener("click", () => {
+    logoutButton?.addEventListener("click", () => {
+        sessionStorage.removeItem(SESSION_KEY);
+        window.location.reload();
+    });
+
+    $("togglePass")?.addEventListener("click", () => {
         const input = $("loginPass");
         const show = input.type === "password";
-
         input.type = show ? "text" : "password";
         $("togglePass").textContent = show ? "Ocultar" : "Mostrar";
-        $("togglePass").setAttribute("aria-label", show ? "Ocultar contraseña" : "Mostrar contraseña");
     });
-
-    $("logoutButton").addEventListener("click", cerrarSesion);
 }
 
 
-/* ----- Arranque ----- */
-function iniciarApp() {
+/* ============================================================
+   EVENTOS E INICIALIZACIÓN
+============================================================ */
+
+function configurarEventos() {
+    $("searchInput")?.addEventListener("input", () => {
+        clearTimeout(searchTimer);
+        searchTimer = setTimeout(resetPageAndFilter, SEARCH_DEBOUNCE);
+    });
+
+    $("refreshButton")?.addEventListener("click", () => cargarDatos(true));
+    $("closeDetail")?.addEventListener("click", cerrarDetalle);
+    $("detailOverlay")?.addEventListener("click", event => {
+        if (event.target === event.currentTarget) cerrarDetalle();
+    });
+}
+
+function iniciarDashboard() {
     construirFiltros();
     appliedValues = leerControles();
     configurarEventos();
     cargarDatos();
-    iniciarActualizacionAutomatica();
 }
 
 document.addEventListener("DOMContentLoaded", () => {
     configurarLogin();
-
-    let saved = null;
-
-    try {
-        saved = sessionStorage.getItem(SESSION_KEY);
-    } catch (error) { /* ignorar */ }
-
-    const user = saved ? findUser(saved) : null;
-
-    if (user) {
-        entrar(user);
-    } else {
-        mostrarLogin();
-    }
 });
-
-
-/* ============================================================
-   EXPORTACIONES
-============================================================ */
-
-window.mostrarDetalle = mostrarDetalle;
-window.cerrarDetalle = cerrarDetalle;
-window.cargarDatos = cargarDatos;
-window.hashClave = hashClave;
