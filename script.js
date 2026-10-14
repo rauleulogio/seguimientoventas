@@ -19,12 +19,12 @@ const FETCH_TIMEOUT = 20000;
 const PROJECTION_USES_FILTERS = true;
 
 /* ============================================================
-   ACCESO (LOGIN) - Configurado con contraseñas en texto plano
+   ACCESO (LOGIN) - Contraseñas directas en texto plano
 ============================================================ */
 
 const USERS_CONFIG = {
     "elva": {
-        pass: "elva2026",
+        pass: "elva2025",
         name: "Elva Edith Curo Salazar",
         csvUrl: "https://docs.google.com/spreadsheets/d/e/2PACX-1vS2dS4SShe8mxhPXlWqkzaYjhLzztRdNPaSy8shwiCx8U_bO_EGp3W8dbSYJfrc5qUmXGYHX9x87Y7I/pub?output=csv"
     },
@@ -33,12 +33,11 @@ const USERS_CONFIG = {
         name: "Gianella Mendiguete Navarro",
         csvUrl: "https://docs.google.com/spreadsheets/d/e/2PACX-1vTpDEkiE8mYRUvwsYlzzcPpd54EQCYF-7yIVOd-D14hmGvUosSbzocGvd7jIsVxb9Seffj3aSZ_2UKQ/pub?output=csv"
     },
-       "raul": {
-        pass: "raul2026",
+    "raul": {
+        pass: "raul2025",
         name: "Raúl Hugo Eulogio Terranova",
         csvUrl: "https://docs.google.com/spreadsheets/d/e/2PACX-1vQ-0sM4BhtW0jFQUkPZr4fkExixvpNEGe1GPisZTtFsJC-pBtpOePh0uigNq7iFAw/pub?output=csv"
     }
-   
 };
 
 const SESSION_KEY = "seguimiento_ventas_sesion";
@@ -754,6 +753,14 @@ function renderFiltrosActivos(active) {
         });
         return chip;
     }));
+}
+
+function limpiarFiltro(ids) {
+    ids.forEach(id => {
+        appliedValues[id] = $(id)?.tagName === "SELECT" ? "ALL" : "";
+    });
+    escribirControles(appliedValues);
+    resetPageAndFilter();
 }
 
 function aplicarFiltros() {
