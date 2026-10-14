@@ -52,7 +52,7 @@ const USERS_CONFIG = {
         passHash: "raul2025",
         name: "Raúl Hugo Eulogio Terranova",
         csvUrl: "https://docs.google.com/spreadsheets/d/e/2PACX-1vQ-0sM4BhtW0jFQUkPZr4fkExixvpNEGe1GPisZTtFsJC-pBtpOePh0uigNq7iFAw/pub?output=csv"
-    },
+    }
 };
 
 const SESSION_KEY = "seguimiento_ventas_sesion";
