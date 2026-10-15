@@ -33,6 +33,11 @@ const USERS_CONFIG = {
         pass: "leobotis",
         name: "Raúl Hugo Eulogio Terranova",
         csvUrl: "https://docs.google.com/spreadsheets/d/e/2PACX-1vQ-0sM4BhtW0jFQUkPZr4fkExixvpNEGe1GPisZTtFsJC-pBtpOePh0uigNq7iFAw/pub?output=csv"
+    },
+    "lusmila": { // <-- NUEVO USUARIO
+        pass: "lusmila2026",
+        name: "Lusmila Maldonado Castillo",
+        csvUrl: ""
     }
 };
 

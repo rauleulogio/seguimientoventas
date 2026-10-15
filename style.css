@@ -2085,6 +2085,31 @@ button:disabled {
     color: #1D4ED8;
 }
 
+/* aaaaa: por ejemplo, un tono naranja/cobrizo */
+.app-shell.theme-lusmila {
+    --primary: #D97706;
+    --primary-dark: #B45309;
+    --primary-soft: #FEF3C7;
+}
+
+.app-shell.theme-lusmila .brand-logo {
+    background: linear-gradient(135deg, #D97706, #F59E0B);
+}
+
+.app-shell.theme-lusmila .hero-card {
+    background: linear-gradient(
+        135deg, #271C0A 0%, #78350F 55%, #D97706 100%
+    );
+}
+
+.app-shell.theme-lusmila .hero-card h2 span {
+    color: #FDE68A;
+}
+
+.app-shell.theme-lusmila .user-chip {
+    background: #FEF3C7;
+    color: #B45309;
+}
 
 /* Botones principales según el color de la persona */
 .app-shell .btn-primary {
@@ -2101,3 +2126,55 @@ button:disabled {
     color: var(--primary-dark);
 }
 
+
+/* =========================================================
+   CABECERA EN CELULAR
+   La marca va arriba y los botones debajo, así nada se
+   amontona ni se tapa (antes todo iba en una sola fila).
+   ========================================================= */
+
+@media (max-width: 640px) {
+    .topbar {
+        position: static;                 /* no ocupa pantalla al desplazar */
+        flex-direction: column;
+        align-items: stretch;
+        gap: 10px;
+        padding: 12px 14px;
+    }
+
+    .brand {
+        gap: 10px;
+    }
+
+    .brand-logo {
+        width: 38px;
+        height: 38px;
+        flex-basis: 38px;
+    }
+
+    .brand h1 {
+        font-size: 15px;
+    }
+
+    .header-actions {
+        width: 100%;
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 8px;
+    }
+
+    .header-actions .btn {
+        width: 100%;
+        min-width: 0;
+        padding: 0 10px;
+    }
+
+    /* El nombre de la asesora se muestra completo, en su propia línea */
+    .user-chip {
+        display: block;
+        order: -1;
+        grid-column: 1 / -1;
+        max-width: 100%;
+        text-align: center;
+    }
+}
