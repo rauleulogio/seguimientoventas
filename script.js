@@ -195,17 +195,18 @@ const DETAIL_SECTIONS = [
 ============================================================ */
 
 const COMMISSION_RANGES = [
-    { range: 1,  pos: 5.00,  alta: 2.00,  prepago: 2.50,  multi: 8.00,  from: 20,  to: 30 },
-    { range: 2,  pos: 12.50, alta: 4.00,  prepago: 6.00,  multi: 14.50, from: 31,  to: 40 },
-    { range: 3,  pos: 13.50, alta: 4.50,  prepago: 6.50,  multi: 15.50, from: 41,  to: 50 },
-    { range: 4,  pos: 14.50, alta: 5.00,  prepago: 7.00,  multi: 16.50, from: 51,  to: 60 },
-    { range: 5,  pos: 15.50, alta: 5.50,  prepago: 7.50,  multi: 17.50, from: 61,  to: 70 },
-    { range: 6,  pos: 17.00, alta: 6.00,  prepago: 8.50,  multi: 19.00, from: 71,  to: 80 },
-    { range: 7,  pos: 19.00, alta: 6.00,  prepago: 10.00, multi: 22.00, from: 81,  to: 95 },
-    { range: 8,  pos: 21.50, alta: 7.00,  prepago: 12.00, multi: 25.00, from: 96,  to: 110 },
-    { range: 9,  pos: 24.00, alta: 8.00,  prepago: 14.00, multi: 27.00, from: 111, to: 150 },
-    { range: 10, pos: 27.00, alta: 9.00,  prepago: 16.00, multi: 30.00, from: 151, to: 199 },
-    { range: 11, pos: 30.00, alta: 12.00, prepago: 18.00, multi: 33.00, from: 200, to: Infinity }
+    { range: 1,  pos: 3.00,  alta: 1.00,  prepago: 1.50,  multi: 5.50,  from: 10,  to: 19 },   
+    { range: 2,  pos: 5.00,  alta: 2.00,  prepago: 2.50,  multi: 8.00,  from: 20,  to: 30 },  
+    { range: 3,  pos: 12.50, alta: 4.00,  prepago: 6.00,  multi: 14.50, from: 31,  to: 40 },   
+    { range: 4,  pos: 13.50, alta: 4.50,  prepago: 6.50,  multi: 15.50, from: 41,  to: 50 },  
+    { range: 5,  pos: 14.50, alta: 5.00,  prepago: 7.00,  multi: 16.50, from: 51,  to: 60 },   
+    { range: 6,  pos: 15.50, alta: 5.50,  prepago: 7.50,  multi: 17.50, from: 61,  to: 70 },   
+    { range: 7,  pos: 17.00, alta: 6.00,  prepago: 8.50,  multi: 19.00, from: 71,  to: 80 },   
+    { range: 8,  pos: 19.00, alta: 6.00,  prepago: 10.00, multi: 22.00, from: 81,  to: 95 },  
+    { range: 9,  pos: 21.50, alta: 7.00,  prepago: 12.00, multi: 25.00, from: 96,  to: 110 },  
+    { range: 10, pos: 24.00, alta: 8.00,  prepago: 14.00, multi: 27.00, from: 111, to: 150 },  
+    { range: 11, pos: 27.00, alta: 9.00,  prepago: 16.00, multi: 30.00, from: 151, to: 199 },  
+    { range: 12, pos: 30.00, alta: 12.00, prepago: 18.00, multi: 33.00, from: 200, to: Infinity } 
 ];
 
 const TOP_RANGE = COMMISSION_RANGES[COMMISSION_RANGES.length - 1];
