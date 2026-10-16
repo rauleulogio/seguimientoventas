@@ -1892,12 +1892,14 @@ button:disabled {
 }
 
 .login-card {
+    position: relative; /* Clave para que el panda se posicione respecto a esta caja */
     width: 100%;
     max-width: 420px;
     padding: 32px 30px 28px;
     border-radius: 22px;
     background: #fff;
     box-shadow: 0 30px 70px rgba(2, 6, 23, 0.45);
+    margin-top: 40px; /* Dejamos espacio arriba para que el panda respire fuera del cuadro */
 }
 
 .login-brand {
@@ -2177,4 +2179,141 @@ button:disabled {
         max-width: 100%;
         text-align: center;
     }
+}
+/* =========================================================
+   PANDA INTERACTIVO LOGIN
+   ========================================================= */
+.panda-container {
+    position: absolute;
+    top: -209px; /* Lo subimos un poco más para que al crecer hacia abajo no tape el título */
+    left: 50%;
+    transform: translateX(-50%) scale(2); /* ¡Aquí lo duplicamos al doble de su tamaño! */
+    transform-origin: top center; /* Hace que crezca hacia abajo y los lados desde arriba */
+    width: 110px;
+    height: 90px;
+    margin: 0;
+    z-index: 20;
+}
+
+.panda-face {
+    position: absolute;
+    bottom: 0;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 100px;
+    height: 90px;
+    background: #ffffff;
+    border: 3px solid #1e293b;
+    border-radius: 50% 50% 45% 45%;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.08);
+}
+
+.panda-face .ear {
+    position: absolute;
+    width: 30px;
+    height: 30px;
+    background: #1e293b;
+    border-radius: 50%;
+    top: -8px;
+}
+.panda-face .ear.left { left: 5px; }
+.panda-face .ear.right { right: 5px; }
+
+.panda-face .eye {
+    position: absolute;
+    width: 24px;
+    height: 28px;
+    background: #1e293b;
+    border-radius: 50%;
+    top: 32px;
+}
+.panda-face .eye.left { left: 20px; }
+.panda-face .eye.right { right: 20px; }
+
+.panda-face .pupil {
+    position: absolute;
+    width: 8px;
+    height: 8px;
+    background: #fff;
+    border-radius: 50%;
+    top: 6px;
+    left: 8px;
+}
+
+.panda-face .nose {
+    position: absolute;
+    width: 12px;
+    height: 8px;
+    background: #1e293b;
+    border-radius: 50%;
+    top: 48px;
+    left: 50%;
+    transform: translateX(-50%);
+}
+
+.panda-face .mouth {
+    position: absolute;
+    width: 16px;
+    height: 8px;
+    border-bottom: 3px solid #1e293b;
+    border-radius: 0 0 10px 10px;
+    top: 56px;
+    left: 50%;
+    transform: translateX(-50%);
+}
+
+/* Manitas del panda (por defecto abajo) */
+.panda-hands {
+    position: absolute;
+    bottom: -5px;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 90px;
+    height: 40px;
+    display: flex;
+    justify-content: space-between;
+    pointer-events: none;
+    z-index: 10;
+}
+
+.panda-hands .hand {
+    width: 34px;
+    height: 30px;
+    background: #1e293b;
+    border-radius: 50% 50% 20% 20%;
+    transition: transform 0.3s ease-in-out;
+    transform: translateY(35px); /* Ocultas abajo por defecto */
+}
+
+/* Estado activo: Las manos suben a tapar los ojos */
+.panda-container.cover-eyes .hand.left-hand {
+    transform: translateY(-28px) translateX(12px) rotate(-15deg);
+}
+
+.panda-container.cover-eyes .hand.right-hand {
+    transform: translateY(-28px) translateX(-12px) rotate(15deg);
+}
+
+/* =========================================================
+   PATITAS INFERIORES DEL PANDA
+   ========================================================= */
+.panda-feet-bottom {
+    position: absolute;
+    bottom: -20px; /* Las posiciona justo para que salgan por debajo del cuadro blanco */
+    left: 50%;
+    transform: translateX(-50%);
+    width: 180px;
+    height: 30px;
+    display: flex;
+    justify-content: space-between;
+    pointer-events: none;
+    z-index: 20;
+}
+
+.panda-feet-bottom .foot {
+    width: 60px;
+    height: 50px;
+    background: #1e293b; /* Mismo color oscuro de las orejas y manos */
+    border-radius: 40% 40% 50% 50%;
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.15);
 }

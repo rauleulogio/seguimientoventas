@@ -2202,6 +2202,21 @@ function configurarLogin() {
     });
 
     $("logoutButton").addEventListener("click", cerrarSesion);
+
+    const passInput = $("loginPass");
+    const pandaContainer = document.querySelector(".panda-container");
+
+    if (passInput && pandaContainer) {
+        // Cuando hace clic o escribe en la contraseña, el panda se tapa los ojos
+        passInput.addEventListener("focus", () => {
+            pandaContainer.classList.add("cover-eyes");
+        });
+
+        // Cuando sale del campo de contraseña, el panda baja las manos
+        passInput.addEventListener("blur", () => {
+            pandaContainer.classList.remove("cover-eyes");
+        });
+    }
 }
 
 
