@@ -37,7 +37,12 @@ const USERS_CONFIG = {
     "lusmila": { // <-- NUEVO USUARIO
         pass: "lusmila2026",
         name: "Lusmila Maldonado Castillo",
-        csvUrl: ""
+        csvUrl: "https://docs.google.com/spreadsheets/d/e/2PACX-1vRlKKwRfBzMg4OIJLRR35wKggOD5F1rsshGNESyckkgKPLMStRG2GnZgvA-c_lerQ/pub?gid=1557308259&single=true&output=csv"
+    },
+    "sol":{
+        pass: "sol2026",
+        name: "Sol Angel Perez Rivera",
+        csvUrl: "https://docs.google.com/spreadsheets/d/e/2PACX-1vQHy47zy6jTYU7dKvMqpqUUSjA6ZVeMt-3aC8eukKwwgdGjV-EH-E0JzVjgOad7ZoffeAH1bK74vLXu/pub?gid=277308212&single=true&output=csv"  
     }
 };
 
