@@ -654,12 +654,28 @@ function getCommissionType(productText, isMulti) {
 }
 
 /*
+   Cliente Entel = la columna CLIENTE ENTEL dice SI (con o sin tilde, en mayúscula o minúscula).
+   Una ALTA de cliente Entel se paga como POS MONO.
+*/
+function isClienteEntel(row) {
+    return normalize(getValue(row, "clienteEntel")) === "SI";
+}
+
+/*
    Cada venta se clasifica UNA sola vez al cargar los datos.
    Antes se recalculaba en cada render (miles de veces).
 */
 function buildSale(row) {
     const productText = getProductText(row);
     const isMulti = isMultipedido(row);
+
+    /* Altas con CLIENTE ENTEL = SI se cuentan y se pagan como POS MONO */
+    let commissionType = getCommissionType(productText, isMulti);
+    const altaClienteEntel = commissionType === "alta" && isClienteEntel(row);
+
+    if (altaClienteEntel) {
+        commissionType = "pos";
+    }
 
     const searchText = [
         "n", "fechaVenta", "horaVenta", "dni", "nombre", "distrito",
@@ -686,7 +702,8 @@ function buildSale(row) {
         status: getOperationalStatus(row),
         channel: getChannel(row),
         isMulti,
-        commissionType: getCommissionType(productText, isMulti),
+        commissionType,
+        altaClienteEntel,
         otCount: getOtCount(row),
         fields,
         searchText
@@ -1618,6 +1635,9 @@ function calculateProjection(currentSales) {
     const baseCommission =
         totals.pos + totals.alta + totals.prepago + totals.multi;
 
+    /* Altas de cliente Entel que se están pagando como POS MONO */
+    const altasEntel = activeSales.filter(sale => sale.altaClienteEntel).length;
+
     /* Ajuste por Tableu (sobre órdenes OT) */
     const tableuStats = getTableuStats(currentSales);
     const tableuRule = tableuStats.total
@@ -1666,7 +1686,13 @@ function calculateProjection(currentSales) {
     ].forEach(([id, type]) => {
         setText(`${id}Count`, `${counts[type]} ${counts[type] === 1 ? "venta" : "ventas"}`);
         setText(`${id}Price`, `${formatMoney(pricingRange[type])} c/u`);
-        setText(`${id}Note`, rangeLabel);
+        let note = rangeLabel;
+
+        if (type === "pos" && altasEntel > 0) {
+            note += ` · incluye ${altasEntel} ${altasEntel === 1 ? "alta" : "altas"} de cliente Entel`;
+        }
+
+        setText(`${id}Note`, note);
     });
 
     renderAdjustment(
@@ -2257,4 +2283,3 @@ window.mostrarDetalle = mostrarDetalle;
 window.cerrarDetalle = cerrarDetalle;
 window.cargarDatos = cargarDatos;
 window.hashClave = hashClave;
-
